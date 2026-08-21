@@ -1,0 +1,10 @@
+﻿# runtime output
+*.log
+logs/
+
+# driver backups must never end up in the repo
+DriverBackup_*/
+DriverBackup_*.zip
+
+# local scratch
+*.tmp
