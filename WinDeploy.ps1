@@ -41,7 +41,7 @@ if (-not $isAdmin -or -not $isSta) {
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Windows.Forms, Microsoft.VisualBasic
 
 $script:ModulePaths = @(
-    'Logging', 'Models', 'Runner', 'IsoImage', 'DiskTarget', 'DriverStore', 'ApplyImage'
+    'Logging', 'Models', 'Runner', 'IsoImage', 'DiskTarget', 'DriverStore', 'ApplyImage', 'SetupBoot'
 ) | ForEach-Object { Join-Path $script:Root "modules\$_.psm1" }
 
 foreach ($m in $script:ModulePaths) {
@@ -75,7 +75,9 @@ function Set-WdBusy {
     param([bool]$Busy)
     foreach ($n in @('BtnInstall', 'BtnMakeUsb', 'BtnScanDrivers', 'BtnBackupDrivers', 'BtnRestoreDrivers',
                      'BtnLoadIso', 'BtnRefreshDisks', 'BtnRefreshUsb', 'BtnRefreshBoot',
-                     'BtnRenameEntry', 'BtnDeleteEntry', 'BtnDefaultEntry', 'BtnSetTimeout', 'BtnReboot')) {
+                     'BtnRenameEntry', 'BtnDeleteEntry', 'BtnDefaultEntry', 'BtnSetTimeout', 'BtnReboot',
+                     'BtnMakeSetupEntry', 'BtnRemoveSetupEntry', 'BtnRebootToSetup',
+                     'BtnBackupBcd', 'BtnRestoreBcd', 'BtnRefreshSetupHost')) {
         if ($ui[$n]) { $ui[$n].IsEnabled = -not $Busy }
     }
     $ui.BtnCancel.IsEnabled = $Busy
@@ -373,6 +375,126 @@ $ui.BtnInstall.Add_Click({
     }
 })
 
+# ================================================= SETUP-FROM-DISK (no USB) ==
+$script:LastSetupEntry = $null
+
+$script:ResultHandlers['setuphosts'] = {
+    param($value)
+    $ui.CmbSetupHost.ItemsSource = $value
+    $firstOk = @($value | Where-Object { $_.Fits -and -not $_.IsSystem }) | Select-Object -First 1
+    if ($firstOk) { $ui.CmbSetupHost.SelectedItem = $firstOk }
+    elseif ($value.Count) { $ui.CmbSetupHost.SelectedIndex = 0 }
+}
+$script:ResultHandlers['setupentry'] = {
+    param($value)
+    $script:LastSetupEntry = $value
+    Update-WdBootGrid
+    Update-WdBcdBackupList
+}
+
+function Update-WdSetupHosts {
+    $needGB = 0.0
+    $iso = "$($ui.TxtSetupIso.Text)".Trim()
+    if ($iso -and (Test-Path -LiteralPath $iso) -and -not (Get-Item -LiteralPath $iso).PSIsContainer) {
+        # the copied tree is roughly the size of the ISO
+        $needGB = [math]::Round((Get-Item -LiteralPath $iso).Length / 1GB, 1)
+    }
+    $ui.TxtSetupNeed.Text = if ($needGB) { "Needs about $needGB GB free." } else { '' }
+    try {
+        $ui.CmbSetupHost.ItemsSource = Get-WdSetupHostVolumes -NeededGB $needGB
+        $firstOk = @($ui.CmbSetupHost.ItemsSource | Where-Object { $_.Fits -and -not $_.IsSystem }) | Select-Object -First 1
+        if ($firstOk) { $ui.CmbSetupHost.SelectedItem = $firstOk }
+        elseif ($ui.CmbSetupHost.Items.Count) { $ui.CmbSetupHost.SelectedIndex = 0 }
+    } catch {
+        Write-WdLog "Could not list volumes: $($_.Exception.Message)" 'WARN'
+    }
+}
+
+$ui.BtnBrowseSetupIso.Add_Click({
+    $f = Select-WdFile
+    if ($f) { $ui.TxtSetupIso.Text = $f; Update-WdSetupHosts }
+})
+$ui.BtnCopyIsoPath2.Add_Click({ $ui.TxtSetupIso.Text = $ui.TxtIso.Text; Update-WdSetupHosts })
+$ui.BtnRefreshSetupHost.Add_Click({ Update-WdSetupHosts })
+
+$ui.BtnMakeSetupEntry.Add_Click({
+    $iso = "$($ui.TxtSetupIso.Text)".Trim()
+    $host_ = $ui.CmbSetupHost.SelectedItem
+    if (-not $iso)   { Show-WdError 'Pick a Windows source first.'; return }
+    if (-not $host_) { Show-WdError 'Pick a volume to keep the setup files on.'; return }
+
+    if (-not $host_.Fits) {
+        Show-WdError "$($host_.Drive) does not have enough free space for the setup files."
+        return
+    }
+    if ($host_.IsSystem) {
+        $answer = [Windows.MessageBox]::Show(
+            "The files would go on $($host_.Drive), which is the system volume.`r`n`r`n" +
+            "Setup will not be able to wipe $($host_.Drive) with its own source files on it. " +
+            "Use a data partition instead if you want a clean wipe.`r`n`r`nCarry on anyway?",
+            'System volume', 'YesNo', 'Warning')
+        if ($answer -ne 'Yes') { return }
+    }
+
+    $answer = [Windows.MessageBox]::Show(
+        "Copy the installation files to $($host_.Drive)\WinDeploySetup and add a Setup boot entry?" +
+        "`r`n`r`nThe boot store is backed up first. Nothing is erased by this step.",
+        'Confirm', 'YesNo', 'Question')
+    if ($answer -ne 'Yes') { return }
+
+    Invoke-WdJob -Name 'Preparing the Setup boot entry' -Arguments @{
+        SourcePath = $iso
+        HostDrive  = "$($host_.Drive)"
+        EntryName  = "$($ui.TxtSetupEntryName.Text)".Trim()
+        OneShot    = [bool]$ui.ChkOneShot.IsChecked
+    } -OnDone {
+        $extra = if ($ui.ChkOneShot.IsChecked) { 'The next restart goes straight to Setup.' }
+                 else { 'Pick it from the boot menu on the next restart.' }
+        Show-WdInfo ("Setup boot entry is ready. $extra`r`n`r`n" +
+                     "In Setup, do NOT delete the partition holding the WinDeploySetup folder.")
+    } -Script {
+        param($SourcePath, $HostDrive, $EntryName, $OneShot)
+        $r = Install-WdSetupFromIso -SourcePath $SourcePath -HostDrive $HostDrive `
+                                    -EntryName $EntryName -OneShot:$OneShot
+        Publish-WdResult 'setupentry' $r
+    }
+})
+
+$ui.BtnRemoveSetupEntry.Add_Click({
+    $entry = $ui.GridBoot.SelectedItem
+    $folder = ''
+    $id = ''
+
+    if ($script:LastSetupEntry) {
+        $id = $script:LastSetupEntry.Id
+        $folder = $script:LastSetupEntry.Folder
+    } elseif ($entry) {
+        $id = $entry.Id
+        $host_ = $ui.CmbSetupHost.SelectedItem
+        if ($host_) { $folder = Join-Path "$($host_.Drive)" 'WinDeploySetup' }
+    } else {
+        Show-WdError 'Pick the setup entry on the Boot menu tab first.'
+        return
+    }
+
+    $answer = [Windows.MessageBox]::Show(
+        "Remove boot entry $id and delete`r`n$folder ?", 'Confirm', 'YesNo', 'Warning')
+    if ($answer -ne 'Yes') { return }
+
+    Invoke-WdJob -Name 'Removing the Setup boot entry' -Arguments @{ Id = $id; Folder = $folder } `
+        -OnDone { $script:LastSetupEntry = $null; Update-WdBootGrid; Show-WdInfo 'Setup entry and files removed.' } -Script {
+        param($Id, $Folder)
+        Uninstall-WdSetupBootEntry -Id $Id -Folder $Folder -DeleteFiles
+    }
+})
+
+$ui.BtnRebootToSetup.Add_Click({
+    $answer = [Windows.MessageBox]::Show(
+        "Reboot now into Windows Setup?`r`n`r`nSave your work first - this restarts immediately.",
+        'Confirm', 'YesNo', 'Warning')
+    if ($answer -eq 'Yes') { Restart-Computer -Force }
+})
+
 # ==================================================================== USB TAB =
 $ui.BtnBrowseUsbIso.Add_Click({
     $f = Select-WdFile
@@ -516,7 +638,46 @@ function Update-WdBootGrid {
     }
 }
 
-$ui.BtnRefreshBoot.Add_Click({ Update-WdBootGrid })
+function Update-WdBcdBackupList {
+    try {
+        $items = New-Object System.Collections.ObjectModel.ObservableCollection[object]
+        foreach ($f in (Get-WdBcdBackups)) {
+            $items.Add([pscustomobject]@{
+                Path    = $f.FullName
+                Display = "$($f.LastWriteTime.ToString('yyyy-MM-dd HH:mm:ss'))  -  $($f.Name)"
+            })
+        }
+        $ui.CmbBcdBackups.ItemsSource = $items
+        if ($items.Count) { $ui.CmbBcdBackups.SelectedIndex = 0 }
+    } catch {
+        Write-WdLog "Could not list BCD backups: $($_.Exception.Message)" 'WARN'
+    }
+}
+
+$ui.BtnRefreshBoot.Add_Click({ Update-WdBootGrid; Update-WdBcdBackupList })
+
+$ui.BtnBackupBcd.Add_Click({
+    try {
+        $f = Backup-WdBcd
+        Update-WdBcdBackupList
+        Show-WdInfo "Boot store backed up to`r`n$f"
+    } catch { Show-WdError $_.Exception.Message }
+})
+
+$ui.BtnRestoreBcd.Add_Click({
+    $sel = $ui.CmbBcdBackups.SelectedItem
+    if (-not $sel) { Show-WdError 'Pick a backup.'; return }
+    $answer = [Windows.MessageBox]::Show(
+        "Replace the entire boot store with`r`n$($sel.Path) ?`r`n`r`n" +
+        'Every boot entry added since that backup disappears.',
+        'Confirm', 'YesNo', 'Warning')
+    if ($answer -ne 'Yes') { return }
+    try {
+        Restore-WdBcd -Path $sel.Path
+        Update-WdBootGrid
+        Show-WdInfo 'Boot store restored.'
+    } catch { Show-WdError $_.Exception.Message }
+})
 
 $ui.BtnRenameEntry.Add_Click({
     $entry = $ui.GridBoot.SelectedItem
@@ -599,6 +760,8 @@ $window.Add_ContentRendered({
     try {
         $ui.GridDisks.ItemsSource = Get-WdDisks
         Update-WdBootGrid
+        Update-WdBcdBackupList
+        Update-WdSetupHosts
     } catch {
         Write-WdLog "Startup scan failed: $($_.Exception.Message)" 'WARN'
     }

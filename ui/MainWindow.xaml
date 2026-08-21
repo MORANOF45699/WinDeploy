@@ -189,6 +189,67 @@
         </ScrollViewer>
       </TabItem>
 
+      <!-- ============ SETUP FROM DISK (no USB) ============ -->
+      <TabItem Header="  Install without USB  ">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Margin="14,8,14,14">
+
+            <Border Background="#E7F3E7" BorderBrush="#4C9A4C" BorderThickness="1" Padding="10" CornerRadius="3">
+              <TextBlock TextWrapping="Wrap"
+                         Text="Copies the ISO to a folder on a disk you already have, then adds a ramdisk boot entry for sources\boot.wim. The next boot lands in the real Windows Setup wizard, running from the hard disk - so it can wipe C: and do a genuine clean install, with no USB stick involved."/>
+            </Border>
+
+            <TextBlock Style="{StaticResource Header}" Text="1. Windows source"/>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <TextBox Grid.Column="0" x:Name="TxtSetupIso" Margin="0,0,6,0"/>
+              <Button Grid.Column="1" x:Name="BtnBrowseSetupIso" Content="Browse ISO..." Width="110"/>
+              <Button Grid.Column="2" x:Name="BtnCopyIsoPath2"   Content="Same as tab 1" Width="110" Margin="0"/>
+            </Grid>
+
+            <TextBlock Style="{StaticResource Header}" Text="2. Where to keep the setup files"/>
+            <ComboBox x:Name="CmbSetupHost" DisplayMemberPath="Display"/>
+            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+              <Button x:Name="BtnRefreshSetupHost" Content="Refresh volumes" Width="130"/>
+              <TextBlock x:Name="TxtSetupNeed" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#1B4B72"/>
+            </StackPanel>
+            <Border Background="#FDE7E9" BorderBrush="#D13438" BorderThickness="1" Padding="10" Margin="0,8,0,0" CornerRadius="3">
+              <TextBlock TextWrapping="Wrap"
+                         Text="Setup reads install.wim off this volume while it installs, so do NOT delete this partition inside Setup. Keep the files on a data partition and wipe C: only. Putting them on C: itself means Setup cannot wipe C: at all."/>
+            </Border>
+
+            <TextBlock Style="{StaticResource Header}" Text="3. Boot entry"/>
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Grid.Column="0" Text="Name:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+              <TextBox   Grid.Column="1" x:Name="TxtSetupEntryName" Text="Windows Setup (WinDeploy)"/>
+            </Grid>
+            <CheckBox x:Name="ChkOneShot" Content="One-time boot - go to Setup on the next restart only, then back to the normal menu"
+                      IsChecked="True" Margin="0,8,0,0"/>
+            <TextBlock Style="{StaticResource Hint}"
+                       Text="The boot store is backed up automatically before any change. The Boot menu tab can restore it."/>
+
+            <Button x:Name="BtnMakeSetupEntry" Content="Prepare Setup boot entry" Height="38" FontWeight="SemiBold"
+                    Margin="0,14,0,0" HorizontalAlignment="Left" Width="230" Background="#0F6CBD" Foreground="White"/>
+
+            <TextBlock Style="{StaticResource Header}" Text="4. Afterwards - clean up"/>
+            <TextBlock Style="{StaticResource Hint}"
+                       Text="Once the new Windows is installed and working, remove the entry and the copied files to get the space back. Pick the entry on the Boot menu tab first."/>
+            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+              <Button x:Name="BtnRemoveSetupEntry" Content="Remove setup entry + files" Width="200"/>
+              <Button x:Name="BtnRebootToSetup" Content="Reboot into Setup now" Width="180" Foreground="#B00020"/>
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
       <!-- ============ USB ============ -->
       <TabItem Header="  Create bootable USB  ">
         <StackPanel Margin="14,8,14,14">
@@ -322,6 +383,15 @@
 
           <TextBlock Style="{StaticResource Hint}" Margin="0,10,0,0"
                      Text="Deleting an entry only removes it from the boot menu. The files on that partition stay where they are - remove them with Disk Management afterwards if you want the space back."/>
+
+          <TextBlock Style="{StaticResource Header}" Text="Boot store backups"/>
+          <StackPanel Orientation="Horizontal">
+            <ComboBox x:Name="CmbBcdBackups" Width="360" DisplayMemberPath="Display"/>
+            <Button x:Name="BtnBackupBcd"  Content="Back up now" Width="120" Margin="8,0,0,0"/>
+            <Button x:Name="BtnRestoreBcd" Content="Restore selected" Width="140" Foreground="#B00020"/>
+          </StackPanel>
+          <TextBlock Style="{StaticResource Hint}"
+                     Text="A backup is taken automatically before anything writes to the boot store. Restore puts the whole store back the way it was - use it if the boot menu ends up wrong."/>
 
           <TextBlock Style="{StaticResource Header}" Text="After the install"/>
           <StackPanel Orientation="Horizontal">
