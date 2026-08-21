@@ -12,12 +12,12 @@ Import-Module (Join-Path $PSScriptRoot 'Logging.psm1') -DisableNameChecking
 Import-Module (Join-Path $PSScriptRoot 'Runner.psm1')  -DisableNameChecking
 Import-Module (Join-Path $PSScriptRoot 'Models.psm1')  -DisableNameChecking
 
-# classes Windows rarely ships a working driver for - ticked by default
-$script:DefaultClasses = @(
-    'Display', 'Net', 'Media', 'AudioEndpoint', 'Bluetooth', 'Image', 'Printer',
-    'Camera', 'Biometric', 'SmartCardReader', 'HIDClass', 'USB', 'SCSIAdapter',
-    'MEDIA', 'Monitor', 'Sensor', 'FirmwareUpdate'
-)
+# Everything listed is already third-party - Microsoft's inbox drivers are
+# filtered out before we get here - so the default is to keep all of it. An
+# earlier class whitelist quietly dropped chipset (System), the vendor
+# SoftwareComponent packages that audio and chipset drivers depend on, and
+# AMD fTPM, which is exactly the stuff people notice missing after a reinstall.
+# Untick what you do not want; the whole set is only a few hundred MB.
 
 function Get-WdInstalledDrivers {
     <#
@@ -80,7 +80,7 @@ function Get-WdInstalledDrivers {
         $item.SignerName   = $d.DriverSignature
         $item.Devices      = if ($deviceMap.ContainsKey($key)) { ($deviceMap[$key] | Select-Object -First 3) -join '; ' } else { '' }
         $item.SizeBytes    = $size
-        $item.Selected     = ($script:DefaultClasses -contains $d.ClassName)
+        $item.Selected     = -not $d.Inbox
 
         $items.Add($item)
     }
