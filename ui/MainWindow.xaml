@@ -1,9 +1,9 @@
-<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+﻿<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="WinDeploy"
         Height="880" Width="1240" MinHeight="640" MinWidth="1000"
         WindowStartupLocation="CenterScreen"
-        FontFamily="Segoe UI" FontSize="13"
+        FontFamily="Segoe UI, Leelawadee UI, Tahoma" FontSize="13.5"
         Background="{DynamicResource Bg}" Foreground="{DynamicResource Text}"
         TextOptions.TextFormattingMode="Display" UseLayoutRounding="True">
 
@@ -460,7 +460,7 @@
                 <DockPanel>
                   <StackPanel DockPanel.Dock="Top" Margin="20,20,20,14">
                     <TextBlock Text="WinDeploy" Style="{StaticResource H1}"/>
-                    <TextBlock Text="ISO installer / USB / drivers" FontSize="11"
+                    <TextBlock Text="ลง Windows / ทำ USB / ไดร์เวอร์" FontSize="11"
                                Foreground="{StaticResource TextDim}" Margin="0,3,0,0"/>
                   </StackPanel>
                   <!-- StackPanel, not TabPanel: TabPanel lays tabs out in wrapping
@@ -652,12 +652,12 @@
           <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,20,0">
-          <TextBlock x:Name="TxtStatus" Text="Ready." TextTrimming="CharacterEllipsis"
+          <TextBlock x:Name="TxtStatus" Text="พร้อมทำงาน" TextTrimming="CharacterEllipsis"
                      FontSize="12.5" Foreground="{StaticResource TextDim}"/>
           <ProgressBar x:Name="Progress" Margin="0,8,0,0" Minimum="0" Maximum="100" Value="0"/>
         </StackPanel>
-        <Button Grid.Column="1" x:Name="BtnToggleLog" Content="Hide log" Width="96"/>
-        <Button Grid.Column="2" x:Name="BtnCancel" Content="Cancel" IsEnabled="False" Width="96" Margin="0"
+        <Button Grid.Column="1" x:Name="BtnToggleLog" Content="ซ่อน log" Width="96"/>
+        <Button Grid.Column="2" x:Name="BtnCancel" Content="ยกเลิก" IsEnabled="False" Width="96" Margin="0"
                 Style="{StaticResource DangerBtn}"/>
       </Grid>
     </Border>
@@ -678,17 +678,17 @@
     <TabControl x:Name="Tabs">
 
       <!-- ============ INSTALL ============ -->
-      <TabItem Header="Install to partition">
+      <TabItem Header="ลงบนพาร์ทิชัน">
         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="26,22,20,22">
           <StackPanel MaxWidth="1120">
 
-            <TextBlock Text="Install to a partition" Style="{StaticResource H1}"/>
+            <TextBlock Text="ลง Windows ลงพาร์ทิชัน" Style="{StaticResource H1}"/>
             <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,18"
-                       Text="Applies the image next to your current Windows and adds a second boot menu entry. The machine you are on now keeps working."/>
+                       Text="ลง Windows ตัวใหม่ข้างๆ ตัวเดิม แล้วเพิ่มรายการในเมนูบูต เครื่องที่ใช้อยู่ตอนนี้ยังใช้ได้ปกติ"/>
 
             <Border Style="{StaticResource Card}">
               <StackPanel>
-                <TextBlock Style="{StaticResource Header}" Text="1  WINDOWS SOURCE" Margin="0,0,0,7"/>
+                <TextBlock Style="{StaticResource Header}" Text="1  ไฟล์ต้นทาง WINDOWS" Margin="0,0,0,7"/>
                 <Grid>
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -696,33 +696,33 @@
                     <ColumnDefinition Width="Auto"/>
                   </Grid.ColumnDefinitions>
                   <TextBox Grid.Column="0" x:Name="TxtIso" Margin="0,0,8,0"/>
-                  <Button Grid.Column="1" x:Name="BtnBrowseIso" Content="Browse ISO" Width="112"/>
-                  <Button Grid.Column="2" x:Name="BtnLoadIso"   Content="Read editions" Width="120" Margin="0"/>
+                  <Button Grid.Column="1" x:Name="BtnBrowseIso" Content="เลือกไฟล์ ISO" Width="112"/>
+                  <Button Grid.Column="2" x:Name="BtnLoadIso"   Content="อ่านรุ่นในไฟล์" Width="120" Margin="0"/>
                 </Grid>
-                <TextBlock Style="{StaticResource Hint}" Text="An .iso file, or a folder you already extracted one into."/>
+                <TextBlock Style="{StaticResource Hint}" Text="ไฟล์ .iso หรือโฟลเดอร์ที่แตกไฟล์ ISO ไว้แล้ว"/>
 
-                <TextBlock Style="{StaticResource Header}" Text="2  EDITION"/>
+                <TextBlock Style="{StaticResource Header}" Text="2  รุ่นที่จะลง"/>
                 <ComboBox x:Name="CmbEdition" ItemTemplate="{StaticResource DisplayItem}"/>
               </StackPanel>
             </Border>
 
             <Border Style="{StaticResource Card}">
               <StackPanel>
-                <TextBlock Style="{StaticResource Header}" Text="3  TARGET DISK" Margin="0,0,0,7"/>
+                <TextBlock Style="{StaticResource Header}" Text="3  ดิสก์ปลายทาง" Margin="0,0,0,7"/>
                 <DataGrid x:Name="GridDisks" Height="132">
                   <DataGrid.Columns>
                     <DataGridTextColumn Header="#"        Binding="{Binding DiskNumber}"     Width="36"/>
-                    <DataGridTextColumn Header="DISK"     Binding="{Binding FriendlyName}"   Width="*"/>
-                    <DataGridTextColumn Header="BUS"      Binding="{Binding BusType}"        Width="64"/>
-                    <DataGridTextColumn Header="STYLE"    Binding="{Binding PartitionStyle}" Width="64"/>
-                    <DataGridTextColumn Header="SIZE"     Binding="{Binding SizeGB}"         Width="86"/>
-                    <DataGridTextColumn Header="FREE GAP" Binding="{Binding FreeGB}"         Width="86"/>
-                    <DataGridTextColumn Header="VOLUMES"  Binding="{Binding Volumes}"        Width="120"/>
-                    <DataGridTextColumn Header="NOTE"     Binding="{Binding Safety}"         Width="150"/>
+                    <DataGridTextColumn Header="ดิสก์"     Binding="{Binding FriendlyName}"   Width="*"/>
+                    <DataGridTextColumn Header="บัส"      Binding="{Binding BusType}"        Width="64"/>
+                    <DataGridTextColumn Header="รูปแบบ"    Binding="{Binding PartitionStyle}" Width="64"/>
+                    <DataGridTextColumn Header="ขนาด"     Binding="{Binding SizeGB}"         Width="86"/>
+                    <DataGridTextColumn Header="ช่องว่างต่อเนื่อง" Binding="{Binding FreeGB}"         Width="86"/>
+                    <DataGridTextColumn Header="ไดรฟ์"  Binding="{Binding Volumes}"        Width="120"/>
+                    <DataGridTextColumn Header="หมายเหตุ"     Binding="{Binding Safety}"         Width="150"/>
                   </DataGrid.Columns>
                 </DataGrid>
                 <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                  <Button x:Name="BtnRefreshDisks" Content="Refresh disks" Width="128"/>
+                  <Button x:Name="BtnRefreshDisks" Content="อ่านดิสก์ใหม่" Width="128"/>
                   <TextBlock x:Name="TxtFirmware" Foreground="{StaticResource Accent}" Margin="6,0,0,0" FontSize="12"/>
                 </StackPanel>
               </StackPanel>
@@ -730,11 +730,11 @@
 
             <Border Style="{StaticResource Card}">
               <StackPanel>
-                <TextBlock Style="{StaticResource Header}" Text="4  WHERE THE NEW WINDOWS GOES" Margin="0,0,0,9"/>
+                <TextBlock Style="{StaticResource Header}" Text="4  จะลง WINDOWS ตัวใหม่ตรงไหน" Margin="0,0,0,9"/>
                 <StackPanel Orientation="Horizontal">
-                  <RadioButton x:Name="RadNewPart" Content="Create a new partition" IsChecked="True"
+                  <RadioButton x:Name="RadNewPart" Content="สร้างพาร์ทิชันใหม่" IsChecked="True"
                                GroupName="Target" Margin="0,0,26,0"/>
-                  <RadioButton x:Name="RadExistingPart" Content="Use an existing partition (erases it)" GroupName="Target"/>
+                  <RadioButton x:Name="RadExistingPart" Content="ใช้พาร์ทิชันที่มีอยู่ (ข้อมูลในนั้นหายหมด)" GroupName="Target"/>
                 </StackPanel>
 
                 <Grid Margin="0,14,0,0">
@@ -744,21 +744,21 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                   </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Text="Size (GB)" Foreground="{StaticResource TextDim}" Margin="0,0,10,0"/>
+                  <TextBlock Grid.Column="0" Text="ขนาด (GB)" Foreground="{StaticResource TextDim}" Margin="0,0,10,0"/>
                   <TextBox   Grid.Column="1" x:Name="TxtSizeGB" Text="120"/>
-                  <TextBlock Grid.Column="2" Text="Shrink this if needed" Foreground="{StaticResource TextDim}" Margin="22,0,10,0"/>
+                  <TextBlock Grid.Column="2" Text="ถ้าที่ไม่พอ ให้ย่อพาร์ทิชันนี้" Foreground="{StaticResource TextDim}" Margin="22,0,10,0"/>
                   <ComboBox  Grid.Column="3" x:Name="CmbShrink" ItemTemplate="{StaticResource DisplayItem}"/>
                 </Grid>
 
                 <DataGrid x:Name="GridPartitions" Height="128" Margin="0,14,0,0">
                   <DataGrid.Columns>
-                    <DataGridTextColumn Header="PART"   Binding="{Binding PartitionNumber}" Width="52"/>
-                    <DataGridTextColumn Header="LETTER" Binding="{Binding DriveLetter}"     Width="66"/>
-                    <DataGridTextColumn Header="LABEL"  Binding="{Binding Label}"           Width="160"/>
-                    <DataGridTextColumn Header="FS"     Binding="{Binding FileSystem}"      Width="66"/>
-                    <DataGridTextColumn Header="SIZE"   Binding="{Binding SizeGB}"          Width="96"/>
-                    <DataGridTextColumn Header="FREE"   Binding="{Binding FreeGB}"          Width="96"/>
-                    <DataGridTextColumn Header="TYPE"   Binding="{Binding Type}"            Width="*"/>
+                    <DataGridTextColumn Header="พาร์ท"   Binding="{Binding PartitionNumber}" Width="52"/>
+                    <DataGridTextColumn Header="อักษร" Binding="{Binding DriveLetter}"     Width="66"/>
+                    <DataGridTextColumn Header="ชื่อไดรฟ์"  Binding="{Binding Label}"           Width="160"/>
+                    <DataGridTextColumn Header="ระบบไฟล์"     Binding="{Binding FileSystem}"      Width="66"/>
+                    <DataGridTextColumn Header="ขนาด"   Binding="{Binding SizeGB}"          Width="96"/>
+                    <DataGridTextColumn Header="ว่าง"   Binding="{Binding FreeGB}"          Width="96"/>
+                    <DataGridTextColumn Header="ชนิด"   Binding="{Binding Type}"            Width="*"/>
                   </DataGrid.Columns>
                 </DataGrid>
               </StackPanel>
@@ -766,14 +766,14 @@
 
             <Border Style="{StaticResource Card}">
               <StackPanel>
-                <TextBlock Style="{StaticResource Header}" Text="5  OPTIONS" Margin="0,0,0,9"/>
+                <TextBlock Style="{StaticResource Header}" Text="5  ตัวเลือก" Margin="0,0,0,9"/>
                 <Grid>
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                   </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Text="Boot menu name" Foreground="{StaticResource TextDim}" Margin="0,0,10,0"/>
-                  <TextBox   Grid.Column="1" x:Name="TxtEntryName" Text="Windows (new)"/>
+                  <TextBlock Grid.Column="0" Text="ชื่อในเมนูบูต" Foreground="{StaticResource TextDim}" Margin="0,0,10,0"/>
+                  <TextBox   Grid.Column="1" x:Name="TxtEntryName" Text="Windows (ตัวใหม่)"/>
                 </Grid>
 
                 <Grid Margin="0,14,0,0">
@@ -782,12 +782,12 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                   </Grid.ColumnDefinitions>
-                  <CheckBox Grid.Column="0" x:Name="ChkInjectDrivers" Content="Inject a driver backup" Margin="0,0,14,0"/>
+                  <CheckBox Grid.Column="0" x:Name="ChkInjectDrivers" Content="ยัดไดร์เวอร์ที่สำรองไว้" Margin="0,0,14,0"/>
                   <TextBox  Grid.Column="1" x:Name="TxtInjectPath" IsEnabled="False" Margin="0,0,8,0"/>
-                  <Button   Grid.Column="2" x:Name="BtnBrowseInject" Content="Browse" IsEnabled="False" Width="96" Margin="0"/>
+                  <Button   Grid.Column="2" x:Name="BtnBrowseInject" Content="เลือกโฟลเดอร์" IsEnabled="False" Width="96" Margin="0"/>
                 </Grid>
                 <TextBlock Style="{StaticResource Hint}"
-                           Text="Injected offline, before first boot, so the new Windows comes up with network and display drivers already working."/>
+                           Text="ยัดเข้าไปตั้งแต่ก่อนบูตครั้งแรก Windows ตัวใหม่จะมีไดร์เวอร์เน็ตกับจอพร้อมใช้ทันที"/>
 
                 <Grid Margin="0,14,0,0">
                   <Grid.ColumnDefinitions>
@@ -798,10 +798,10 @@
                     <ColumnDefinition Width="170"/>
                     <ColumnDefinition Width="*"/>
                   </Grid.ColumnDefinitions>
-                  <CheckBox  Grid.Column="0" x:Name="ChkUnattend" Content="Skip most of OOBE" Margin="0,0,22,0"/>
-                  <TextBlock Grid.Column="1" Text="PC name" Foreground="{StaticResource TextDim}" Margin="0,0,10,0"/>
+                  <CheckBox  Grid.Column="0" x:Name="ChkUnattend" Content="ข้ามหน้าตั้งค่าแรกเริ่ม" Margin="0,0,22,0"/>
+                  <TextBlock Grid.Column="1" Text="ชื่อเครื่อง" Foreground="{StaticResource TextDim}" Margin="0,0,10,0"/>
                   <TextBox   Grid.Column="2" x:Name="TxtComputerName" IsEnabled="False"/>
-                  <TextBlock Grid.Column="3" Text="User" Foreground="{StaticResource TextDim}" Margin="18,0,10,0"/>
+                  <TextBlock Grid.Column="3" Text="ผู้ใช้" Foreground="{StaticResource TextDim}" Margin="18,0,10,0"/>
                   <TextBox   Grid.Column="4" x:Name="TxtUserName" IsEnabled="False"/>
                 </Grid>
               </StackPanel>
@@ -809,27 +809,27 @@
 
             <Border Style="{StaticResource NoteOk}">
               <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Ok}"
-                         Text="The boot menu is written last. If anything fails before that, this PC still boots exactly as it does now."/>
+                         Text="เมนูบูตถูกเขียนเป็นขั้นสุดท้าย ถ้าพังก่อนถึงขั้นนั้น เครื่องยังบูตเหมือนเดิมทุกอย่าง"/>
             </Border>
 
-            <Button x:Name="BtnInstall" Content="Install Windows" Style="{StaticResource Primary}"
+            <Button x:Name="BtnInstall" Content="เริ่มลง Windows" Style="{StaticResource Primary}"
                     Margin="0,18,0,0" HorizontalAlignment="Left" Width="210"/>
           </StackPanel>
         </ScrollViewer>
       </TabItem>
 
       <!-- ============ SETUP FROM DISK ============ -->
-      <TabItem Header="Install without USB">
+      <TabItem Header="ลงโดยไม่ใช้ USB">
         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="26,22,20,22">
           <StackPanel MaxWidth="1120">
 
-            <TextBlock Text="Install without a USB stick" Style="{StaticResource H1}"/>
+            <TextBlock Text="ลง Windows โดยไม่ใช้แฟลชไดรฟ์" Style="{StaticResource H1}"/>
             <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,18"
-                       Text="Copies the ISO to a folder on a disk you already have, then adds a ramdisk boot entry for sources\boot.wim. The next boot lands in the real Windows Setup wizard running off the hard disk - so it can wipe C: and do a genuine clean install, with no USB stick involved."/>
+                       Text="ก๊อปไฟล์ ISO ลงโฟลเดอร์บนดิสก์ที่มีอยู่ แล้วเพิ่มรายการบูตแบบ ramdisk ชี้ไปที่ sources\boot.wim พอรีบูตจะเข้าหน้า Windows Setup ตัวจริงที่รันจากฮาร์ดดิสก์ ล้าง C: แล้วลงใหม่สะอาดได้เลย ไม่ต้องใช้แฟลชไดรฟ์"/>
 
             <Border Style="{StaticResource Card}">
               <StackPanel>
-                <TextBlock Style="{StaticResource Header}" Text="1  WINDOWS SOURCE" Margin="0,0,0,7"/>
+                <TextBlock Style="{StaticResource Header}" Text="1  ไฟล์ต้นทาง WINDOWS" Margin="0,0,0,7"/>
                 <Grid>
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -837,14 +837,14 @@
                     <ColumnDefinition Width="Auto"/>
                   </Grid.ColumnDefinitions>
                   <TextBox Grid.Column="0" x:Name="TxtSetupIso" Margin="0,0,8,0"/>
-                  <Button Grid.Column="1" x:Name="BtnBrowseSetupIso" Content="Browse ISO" Width="112"/>
-                  <Button Grid.Column="2" x:Name="BtnCopyIsoPath2"   Content="Same as tab 1" Width="120" Margin="0"/>
+                  <Button Grid.Column="1" x:Name="BtnBrowseSetupIso" Content="เลือกไฟล์ ISO" Width="112"/>
+                  <Button Grid.Column="2" x:Name="BtnCopyIsoPath2"   Content="ใช้ไฟล์เดียวกับแท็บแรก" Width="120" Margin="0"/>
                 </Grid>
 
-                <TextBlock Style="{StaticResource Header}" Text="2  WHERE TO KEEP THE SETUP FILES"/>
+                <TextBlock Style="{StaticResource Header}" Text="2  เก็บไฟล์ติดตั้งไว้ที่ไหน"/>
                 <ComboBox x:Name="CmbSetupHost" ItemTemplate="{StaticResource DisplayItem}"/>
                 <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                  <Button x:Name="BtnRefreshSetupHost" Content="Refresh volumes" Width="140"/>
+                  <Button x:Name="BtnRefreshSetupHost" Content="อ่านไดรฟ์ใหม่" Width="140"/>
                   <TextBlock x:Name="TxtSetupNeed" Foreground="{StaticResource Accent}" Margin="6,0,0,0" FontSize="12"/>
                 </StackPanel>
               </StackPanel>
@@ -852,36 +852,36 @@
 
             <Border Style="{StaticResource NoteDanger}" Margin="0,0,0,14">
               <TextBlock TextWrapping="Wrap" Foreground="#FF9AA0"
-                         Text="Setup reads install.wim off this volume while it installs, so do NOT delete this partition inside Setup. Keep the files on a data partition and wipe C: only. Putting them on C: itself means Setup cannot wipe C: at all."/>
+                         Text="ตอนติดตั้ง Setup อ่าน install.wim จากไดรฟ์นี้ ดังนั้นห้ามลบพาร์ทิชันนี้เด็ดขาดตอนอยู่ใน Setup เก็บไฟล์ไว้บนไดรฟ์ข้อมูล แล้วล้างเฉพาะ C: ถ้าเก็บไว้บน C: เอง Setup จะล้าง C: ไม่ได้เลย"/>
             </Border>
 
             <Border Style="{StaticResource Card}">
               <StackPanel>
-                <TextBlock Style="{StaticResource Header}" Text="3  BOOT ENTRY" Margin="0,0,0,7"/>
+                <TextBlock Style="{StaticResource Header}" Text="3  รายการบูต" Margin="0,0,0,7"/>
                 <Grid>
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                   </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Text="Name" Foreground="{StaticResource TextDim}" Margin="0,0,10,0"/>
+                  <TextBlock Grid.Column="0" Text="ชื่อ" Foreground="{StaticResource TextDim}" Margin="0,0,10,0"/>
                   <TextBox   Grid.Column="1" x:Name="TxtSetupEntryName" Text="Windows Setup (WinDeploy)"/>
                 </Grid>
                 <CheckBox x:Name="ChkOneShot" IsChecked="True" Margin="0,14,0,0"
-                          Content="One-time boot - go to Setup on the next restart only, then back to the normal menu"/>
+                          Content="บูตครั้งเดียว - รีบูตรอบหน้าเข้า Setup เลย รอบต่อไปกลับมาเมนูปกติเอง"/>
                 <TextBlock Style="{StaticResource Hint}"
-                           Text="The boot store is backed up automatically before any change. The Boot menu tab can restore it."/>
+                           Text="สำรอง BCD ให้อัตโนมัติก่อนแก้ทุกครั้ง ย้อนกลับได้ที่แท็บเมนูบูต"/>
               </StackPanel>
             </Border>
 
-            <Button x:Name="BtnMakeSetupEntry" Content="Prepare Setup boot entry" Style="{StaticResource Primary}"
+            <Button x:Name="BtnMakeSetupEntry" Content="เตรียมรายการบูตเข้า Setup" Style="{StaticResource Primary}"
                     HorizontalAlignment="Left" Width="250"/>
 
-            <TextBlock Style="{StaticResource Header}" Text="4  AFTERWARDS - CLEAN UP"/>
+            <TextBlock Style="{StaticResource Header}" Text="4  หลังลงเสร็จ - เก็บกวาด"/>
             <TextBlock Style="{StaticResource Hint}" Margin="0,0,0,12"
-                       Text="Once the new Windows is installed and working, remove the entry and the copied files to get the space back. Pick the entry on the Boot menu tab first."/>
+                       Text="พอ Windows ตัวใหม่ลงเสร็จและใช้ได้แล้ว ค่อยลบรายการบูตกับไฟล์ที่ก๊อปไว้เพื่อเอาที่คืน เลือกรายการที่แท็บเมนูบูตก่อน"/>
             <StackPanel Orientation="Horizontal">
-              <Button x:Name="BtnRemoveSetupEntry" Content="Remove setup entry + files" Width="216"/>
-              <Button x:Name="BtnRebootToSetup" Content="Reboot into Setup now" Width="192"
+              <Button x:Name="BtnRemoveSetupEntry" Content="ลบรายการบูต + ไฟล์" Width="216"/>
+              <Button x:Name="BtnRebootToSetup" Content="รีบูตเข้า Setup เดี๋ยวนี้" Width="192"
                       Style="{StaticResource DangerBtn}"/>
             </StackPanel>
           </StackPanel>
@@ -889,17 +889,17 @@
       </TabItem>
 
       <!-- ============ USB ============ -->
-      <TabItem Header="Create bootable USB">
+      <TabItem Header="ทำ USB บูต">
         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="26,22,20,22">
           <StackPanel MaxWidth="1120">
 
-            <TextBlock Text="Create a bootable USB" Style="{StaticResource H1}"/>
+            <TextBlock Text="ทำแฟลชไดรฟ์บูต" Style="{StaticResource H1}"/>
             <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,18"
-                       Text="GPT + FAT32, which is what UEFI firmware with Secure Boot will actually boot."/>
+                       Text="ใช้ GPT + FAT32 ซึ่งเป็นแบบที่เครื่อง UEFI ที่เปิด Secure Boot บูตได้จริง"/>
 
             <Border Style="{StaticResource Card}">
               <StackPanel>
-                <TextBlock Style="{StaticResource Header}" Text="1  WINDOWS SOURCE" Margin="0,0,0,7"/>
+                <TextBlock Style="{StaticResource Header}" Text="1  ไฟล์ต้นทาง WINDOWS" Margin="0,0,0,7"/>
                 <Grid>
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -907,22 +907,22 @@
                     <ColumnDefinition Width="Auto"/>
                   </Grid.ColumnDefinitions>
                   <TextBox Grid.Column="0" x:Name="TxtUsbIso" Margin="0,0,8,0"/>
-                  <Button Grid.Column="1" x:Name="BtnBrowseUsbIso" Content="Browse ISO" Width="112"/>
-                  <Button Grid.Column="2" x:Name="BtnCopyIsoPath"  Content="Same as tab 1" Width="120" Margin="0"/>
+                  <Button Grid.Column="1" x:Name="BtnBrowseUsbIso" Content="เลือกไฟล์ ISO" Width="112"/>
+                  <Button Grid.Column="2" x:Name="BtnCopyIsoPath"  Content="ใช้ไฟล์เดียวกับแท็บแรก" Width="120" Margin="0"/>
                 </Grid>
 
-                <TextBlock Style="{StaticResource Header}" Text="2  USB STICK - EVERYTHING ON IT IS ERASED"/>
+                <TextBlock Style="{StaticResource Header}" Text="2  แฟลชไดรฟ์ - ข้อมูลในนั้นถูกล้างทั้งหมด"/>
                 <DataGrid x:Name="GridUsb" Height="150">
                   <DataGrid.Columns>
                     <DataGridTextColumn Header="#"       Binding="{Binding DiskNumber}"   Width="36"/>
-                    <DataGridTextColumn Header="DEVICE"  Binding="{Binding FriendlyName}" Width="*"/>
-                    <DataGridTextColumn Header="SIZE"    Binding="{Binding SizeGB}"       Width="96"/>
-                    <DataGridTextColumn Header="VOLUMES" Binding="{Binding Volumes}"      Width="170"/>
+                    <DataGridTextColumn Header="อุปกรณ์"  Binding="{Binding FriendlyName}" Width="*"/>
+                    <DataGridTextColumn Header="ขนาด"    Binding="{Binding SizeGB}"       Width="96"/>
+                    <DataGridTextColumn Header="ไดรฟ์" Binding="{Binding Volumes}"      Width="170"/>
                   </DataGrid.Columns>
                 </DataGrid>
                 <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                  <Button x:Name="BtnRefreshUsb" Content="Refresh" Width="112"/>
-                  <TextBlock Text="Volume label" Foreground="{StaticResource TextDim}" Margin="14,0,10,0"/>
+                  <Button x:Name="BtnRefreshUsb" Content="รีเฟรช" Width="112"/>
+                  <TextBlock Text="ชื่อไดรฟ์" Foreground="{StaticResource TextDim}" Margin="14,0,10,0"/>
                   <TextBox x:Name="TxtUsbLabel" Text="WINSETUP" Width="150"/>
                 </StackPanel>
               </StackPanel>
@@ -930,17 +930,17 @@
 
             <Border Style="{StaticResource NoteWarn}">
               <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Warn}"
-                         Text="An install.wim over 4 GB is split into .swm files automatically. On a stick larger than 32 GB the remainder becomes a plain NTFS data partition. Only removable USB disks are listed."/>
+                         Text="ถ้า install.wim ใหญ่เกิน 4 GB จะถูกหั่นเป็นไฟล์ .swm ให้อัตโนมัติ ถ้าแฟลชไดรฟ์ใหญ่กว่า 32 GB ส่วนที่เหลือจะกลายเป็นพาร์ทิชัน NTFS เก็บข้อมูล รายการนี้แสดงเฉพาะแฟลชไดรฟ์ USB เท่านั้น"/>
             </Border>
 
-            <Button x:Name="BtnMakeUsb" Content="Create bootable USB" Style="{StaticResource Primary}"
+            <Button x:Name="BtnMakeUsb" Content="ทำ USB บูต" Style="{StaticResource Primary}"
                     Margin="0,18,0,0" HorizontalAlignment="Left" Width="230"/>
           </StackPanel>
         </ScrollViewer>
       </TabItem>
 
       <!-- ============ DRIVERS ============ -->
-      <TabItem Header="Drivers">
+      <TabItem Header="ไดร์เวอร์">
         <Grid Margin="26,22,20,22">
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -950,17 +950,17 @@
           </Grid.RowDefinitions>
 
           <StackPanel Grid.Row="0" Margin="0,0,0,16">
-            <TextBlock Text="Drivers" Style="{StaticResource H1}"/>
+            <TextBlock Text="ไดร์เวอร์" Style="{StaticResource H1}"/>
             <TextBlock Style="{StaticResource Hint}"
-                       Text="Back up every third-party driver on this machine, then put them back on a fresh install. Microsoft's own inbox drivers are filtered out - the new Windows brings its own."/>
+                       Text="สำรองไดร์เวอร์ของผู้ผลิตทั้งหมดในเครื่องนี้ แล้วเอากลับมาใส่ตอนลงใหม่ ไดร์เวอร์ที่มากับ Windows ถูกกรองออกแล้ว เพราะตัวใหม่มีมาให้เอง"/>
           </StackPanel>
 
           <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
-            <Button x:Name="BtnScanDrivers" Content="Scan drivers" Width="128"/>
-            <Button x:Name="BtnSelectAll"   Content="Select all"   Width="98"/>
-            <Button x:Name="BtnSelectNone"  Content="Select none"  Width="106"/>
-            <CheckBox x:Name="ChkIncludeInbox" Content="Include inbox drivers" Margin="10,0,0,0"/>
-            <TextBlock Text="Filter" Foreground="{StaticResource TextDim}" Margin="20,0,10,0"/>
+            <Button x:Name="BtnScanDrivers" Content="สแกนไดร์เวอร์" Width="128"/>
+            <Button x:Name="BtnSelectAll"   Content="เลือกทั้งหมด"   Width="98"/>
+            <Button x:Name="BtnSelectNone"  Content="ไม่เลือกเลย"  Width="106"/>
+            <CheckBox x:Name="ChkIncludeInbox" Content="รวมไดร์เวอร์ที่มากับ Windows" Margin="10,0,0,0"/>
+            <TextBlock Text="ค้นหา" Foreground="{StaticResource TextDim}" Margin="20,0,10,0"/>
             <TextBox x:Name="TxtFilter" Width="170"/>
             <TextBlock x:Name="TxtDriverCount" Foreground="{StaticResource Accent}" Margin="14,0,0,0"
                        FontSize="12" TextTrimming="CharacterEllipsis"/>
@@ -972,13 +972,13 @@
                                       ElementStyle="{StaticResource GridCheck}"
                                       EditingElementStyle="{StaticResource GridCheck}"
                                       Binding="{Binding Selected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-              <DataGridTextColumn Header="PROVIDER" Binding="{Binding Provider}"     Width="170" IsReadOnly="True"/>
-              <DataGridTextColumn Header="CLASS"    Binding="{Binding ClassName}"    Width="120" IsReadOnly="True"/>
-              <DataGridTextColumn Header="DEVICE"   Binding="{Binding Devices}"      Width="*"   IsReadOnly="True"/>
-              <DataGridTextColumn Header="VERSION"  Binding="{Binding Version}"      Width="130" IsReadOnly="True"/>
-              <DataGridTextColumn Header="DATE"     Binding="{Binding DriverDate}"   Width="96"  IsReadOnly="True"/>
+              <DataGridTextColumn Header="ผู้ผลิต" Binding="{Binding Provider}"     Width="170" IsReadOnly="True"/>
+              <DataGridTextColumn Header="หมวด"    Binding="{Binding ClassName}"    Width="120" IsReadOnly="True"/>
+              <DataGridTextColumn Header="อุปกรณ์"   Binding="{Binding Devices}"      Width="*"   IsReadOnly="True"/>
+              <DataGridTextColumn Header="เวอร์ชัน"  Binding="{Binding Version}"      Width="130" IsReadOnly="True"/>
+              <DataGridTextColumn Header="วันที่"     Binding="{Binding DriverDate}"   Width="96"  IsReadOnly="True"/>
               <DataGridTextColumn Header="INF"      Binding="{Binding OemInf}"       Width="86"  IsReadOnly="True"/>
-              <DataGridTextColumn Header="ORIGINAL" Binding="{Binding OriginalName}" Width="150" IsReadOnly="True"/>
+              <DataGridTextColumn Header="ชื่อเดิม" Binding="{Binding OriginalName}" Width="150" IsReadOnly="True"/>
             </DataGrid.Columns>
           </DataGrid>
 
@@ -990,22 +990,22 @@
 
             <Border Grid.Column="0" Style="{StaticResource Card}" Margin="0,0,7,0">
               <StackPanel>
-                <TextBlock Style="{StaticResource Header}" Text="BACK UP" Margin="0,0,0,7"/>
+                <TextBlock Style="{StaticResource Header}" Text="สำรองไดร์เวอร์" Margin="0,0,0,7"/>
                 <Grid>
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                   </Grid.ColumnDefinitions>
                   <TextBox Grid.Column="0" x:Name="TxtBackupDest" Margin="0,0,8,0"/>
-                  <Button  Grid.Column="1" x:Name="BtnBrowseBackupDest" Content="Browse" Width="92" Margin="0"/>
+                  <Button  Grid.Column="1" x:Name="BtnBrowseBackupDest" Content="เลือกโฟลเดอร์" Width="92" Margin="0"/>
                 </Grid>
                 <Grid Margin="0,12,0,0">
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                   </Grid.ColumnDefinitions>
-                  <CheckBox Grid.Column="0" x:Name="ChkZip" Content="Zip it" VerticalAlignment="Center"/>
-                  <Button   Grid.Column="1" x:Name="BtnBackupDrivers" Content="Back up selected"
+                  <CheckBox Grid.Column="0" x:Name="ChkZip" Content="บีบเป็น zip" VerticalAlignment="Center"/>
+                  <Button   Grid.Column="1" x:Name="BtnBackupDrivers" Content="สำรองตัวที่เลือก"
                             HorizontalAlignment="Right" Width="168" Margin="0"
                             Style="{StaticResource Primary}" FontSize="12.5" Padding="14,8"/>
                 </Grid>
@@ -1014,7 +1014,7 @@
 
             <Border Grid.Column="1" Style="{StaticResource Card}" Margin="7,0,0,0">
               <StackPanel>
-                <TextBlock Style="{StaticResource Header}" Text="RESTORE" Margin="0,0,0,7"/>
+                <TextBlock Style="{StaticResource Header}" Text="คืนไดร์เวอร์" Margin="0,0,0,7"/>
                 <Grid>
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -1022,8 +1022,8 @@
                     <ColumnDefinition Width="Auto"/>
                   </Grid.ColumnDefinitions>
                   <TextBox Grid.Column="0" x:Name="TxtRestoreSrc" Margin="0,0,8,0"/>
-                  <Button  Grid.Column="1" x:Name="BtnBrowseRestoreFolder" Content="Folder" Width="88"/>
-                  <Button  Grid.Column="2" x:Name="BtnBrowseRestoreZip"    Content="Zip"    Width="76" Margin="0"/>
+                  <Button  Grid.Column="1" x:Name="BtnBrowseRestoreFolder" Content="โฟลเดอร์" Width="88"/>
+                  <Button  Grid.Column="2" x:Name="BtnBrowseRestoreZip"    Content="ไฟล์ zip"    Width="76" Margin="0"/>
                 </Grid>
                 <Grid Margin="0,12,0,0">
                   <Grid.ColumnDefinitions>
@@ -1031,15 +1031,15 @@
                     <ColumnDefinition Width="Auto"/>
                   </Grid.ColumnDefinitions>
                   <StackPanel Grid.Column="0">
-                    <RadioButton x:Name="RadRestoreOnline" Content="Into this running Windows"
+                    <RadioButton x:Name="RadRestoreOnline" Content="ใส่เข้า Windows ที่ใช้อยู่ตอนนี้"
                                  IsChecked="True" GroupName="Restore"/>
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                      <RadioButton x:Name="RadRestoreOffline" Content="Into another Windows on"
+                      <RadioButton x:Name="RadRestoreOffline" Content="ใส่เข้า Windows อีกตัวบนไดรฟ์"
                                    GroupName="Restore" Margin="0,0,10,0"/>
                       <ComboBox x:Name="CmbOfflineDrive" Width="88" IsEnabled="False"/>
                     </StackPanel>
                   </StackPanel>
-                  <Button Grid.Column="1" x:Name="BtnRestoreDrivers" Content="Restore" Width="120"
+                  <Button Grid.Column="1" x:Name="BtnRestoreDrivers" Content="คืนไดร์เวอร์" Width="120"
                           Margin="12,0,0,0" VerticalAlignment="Bottom"/>
                 </Grid>
               </StackPanel>
@@ -1049,17 +1049,17 @@
       </TabItem>
 
       <!-- ============ RECLAIM SPACE ============ -->
-      <TabItem Header="Reclaim space">
+      <TabItem Header="ทวงที่คืน">
         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="26,22,20,22">
           <StackPanel MaxWidth="1120">
 
-            <TextBlock Text="Reclaim space after a reinstall" Style="{StaticResource H1}"/>
+            <TextBlock Text="ทวงที่ว่างคืนหลังลงเครื่องใหม่" Style="{StaticResource H1}"/>
             <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,18"
-                       Text="Windows can only grow a partition into free space that sits directly after it. A Recovery partition parked in the middle is what greys out Extend Volume in Disk Management. This moves WinRE out of the way properly, deletes the stale recovery partition, extends, then builds a fresh recovery partition at the end of the disk and re-registers WinRE."/>
+                       Text="Windows ขยายพาร์ทิชันได้เฉพาะเข้าไปในที่ว่างที่ติดกันทางขวาเท่านั้น พาร์ทิชัน Recovery ที่ค้างอยู่ตรงกลางคือตัวที่ทำให้ปุ่ม Extend Volume ใน Disk Management เป็นสีเทากดไม่ได้ ตัวนี้จะย้าย WinRE ออกให้ถูกวิธี ลบ Recovery ตัวเก่า ขยายพาร์ทิชัน แล้วสร้าง Recovery ใหม่ไว้ท้ายดิสก์ พร้อมลงทะเบียน WinRE กลับให้"/>
 
             <Border Style="{StaticResource Card}">
               <StackPanel>
-                <TextBlock Style="{StaticResource Header}" Text="1  DISK LAYOUT" Margin="0,0,0,7"/>
+                <TextBlock Style="{StaticResource Header}" Text="1  ผังพาร์ทิชันบนดิสก์" Margin="0,0,0,7"/>
                 <Grid>
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -1067,80 +1067,80 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                   </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Text="Disk" Foreground="{StaticResource TextDim}" Margin="0,0,10,0"/>
+                  <TextBlock Grid.Column="0" Text="ดิสก์" Foreground="{StaticResource TextDim}" Margin="0,0,10,0"/>
                   <ComboBox  Grid.Column="1" x:Name="CmbReclaimDisk" ItemTemplate="{StaticResource DisplayItem}"/>
-                  <Button    Grid.Column="2" x:Name="BtnRefreshReclaim" Content="Refresh" Width="106" Margin="10,0,0,0"/>
+                  <Button    Grid.Column="2" x:Name="BtnRefreshReclaim" Content="รีเฟรช" Width="106" Margin="10,0,0,0"/>
                   <TextBlock Grid.Column="3" x:Name="TxtWinReState" Foreground="{StaticResource Accent}"
                              Margin="14,0,0,0" FontSize="12"/>
                 </Grid>
 
                 <DataGrid x:Name="GridLayout" Height="190" Margin="0,12,0,0">
                   <DataGrid.Columns>
-                    <DataGridTextColumn Header="KIND"   Binding="{Binding Kind}"   Width="110"/>
-                    <DataGridTextColumn Header="PART"   Binding="{Binding Number}" Width="60"/>
-                    <DataGridTextColumn Header="SIZE"   Width="110"
+                    <DataGridTextColumn Header="ประเภท"   Binding="{Binding Kind}"   Width="110"/>
+                    <DataGridTextColumn Header="พาร์ท"   Binding="{Binding Number}" Width="60"/>
+                    <DataGridTextColumn Header="ขนาด"   Width="110"
                                         Binding="{Binding SizeGB, StringFormat={}{0:N2} GB}"/>
-                    <DataGridTextColumn Header="DETAIL" Binding="{Binding Note}"   Width="*"/>
+                    <DataGridTextColumn Header="รายละเอียด" Binding="{Binding Note}"   Width="*"/>
                   </DataGrid.Columns>
                 </DataGrid>
                 <TextBlock Style="{StaticResource Hint}"
-                           Text="Listed in the order they physically sit on the disk, unallocated gaps included."/>
+                           Text="เรียงตามตำแหน่งจริงบนดิสก์ รวมช่องว่างที่ยังไม่ได้จัดสรรด้วย"/>
               </StackPanel>
             </Border>
 
             <Border Style="{StaticResource Card}">
               <StackPanel>
-                <TextBlock Style="{StaticResource Header}" Text="2  PARTITION TO GROW" Margin="0,0,0,7"/>
+                <TextBlock Style="{StaticResource Header}" Text="2  พาร์ทิชันที่จะขยาย" Margin="0,0,0,7"/>
                 <Grid>
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                   </Grid.ColumnDefinitions>
                   <ComboBox Grid.Column="0" x:Name="CmbReclaimTarget" ItemTemplate="{StaticResource DisplayItem}"/>
-                  <Button   Grid.Column="1" x:Name="BtnAnalyzeReclaim" Content="Analyze" Width="120" Margin="10,0,0,0"/>
+                  <Button   Grid.Column="1" x:Name="BtnAnalyzeReclaim" Content="วิเคราะห์" Width="120" Margin="10,0,0,0"/>
                 </Grid>
                 <CheckBox x:Name="ChkRecreateRecovery" IsChecked="True" Margin="0,14,0,0"
-                          Content="Rebuild the recovery partition afterwards and re-enable WinRE (recommended)"/>
+                          Content="สร้างพาร์ทิชัน Recovery ใหม่แล้วเปิด WinRE กลับให้ด้วย (แนะนำ)"/>
                 <TextBlock Style="{StaticResource Hint}"
-                           Text="Unticked, WinRE stays disabled - Reset this PC and startup repair will not work until you turn it back on."/>
+                           Text="ถ้าไม่ติ๊ก WinRE จะถูกปิดค้างไว้ - รีเซ็ตเครื่องกับซ่อมการบูตจะใช้ไม่ได้จนกว่าจะเปิดกลับเอง"/>
               </StackPanel>
             </Border>
 
             <Border Style="{StaticResource Card}">
               <StackPanel>
-                <TextBlock Style="{StaticResource Header}" Text="3  PLAN" Margin="0,0,0,7"/>
+                <TextBlock Style="{StaticResource Header}" Text="3  แผนที่จะทำ" Margin="0,0,0,7"/>
                 <Border Background="#0D0F14" BorderBrush="{StaticResource Line}" BorderThickness="1"
                         CornerRadius="6" Padding="14,12" MinHeight="150">
                   <TextBox x:Name="TxtReclaimPlan" Background="Transparent" BorderThickness="0"
                            Foreground="{StaticResource Text}" FontFamily="Cascadia Mono, Consolas"
                            FontSize="12" IsReadOnly="True" TextWrapping="Wrap"
                            VerticalScrollBarVisibility="Auto"
-                           Text="Pick a disk and a partition, then press Analyze. Nothing is touched until you press Reclaim."/>
+                           Text="เลือกดิสก์กับพาร์ทิชัน แล้วกดวิเคราะห์ ยังไม่มีอะไรถูกแตะจนกว่าจะกดปุ่มทวงที่คืน"/>
                 </Border>
               </StackPanel>
             </Border>
 
             <Border Style="{StaticResource NoteWarn}" Margin="0,0,0,14">
               <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Warn}"
-                         Text="Only recovery partitions are ever deleted. If anything else stands in the way - the EFI partition, or a partition with your data on it - the plan stops there and says so instead of removing it."/>
+                         Text="ลบได้เฉพาะพาร์ทิชันชนิด Recovery เท่านั้น ถ้ามีอย่างอื่นขวางอยู่ เช่นพาร์ทิชัน EFI หรือพาร์ทิชันที่มีข้อมูลของคุณ แผนจะหยุดตรงนั้นแล้วบอกเหตุผล ไม่ลบให้"/>
             </Border>
 
             <StackPanel Orientation="Horizontal">
-              <Button x:Name="BtnReclaimDryRun" Content="Dry run" Width="130"/>
-              <Button x:Name="BtnReclaimGo" Content="Reclaim space" Style="{StaticResource Primary}" Width="190"/>
+              <Button x:Name="BtnReclaimDryRun" Content="ลองเดินแผน" Width="130"/>
+              <Button x:Name="BtnReclaimGo" Content="ทวงที่คืน" Style="{StaticResource Primary}" Width="190"/>
             </StackPanel>
           </StackPanel>
         </ScrollViewer>
       </TabItem>
 
       <!-- ============ BOOT MENU ============ -->
-      <TabItem Header="Boot menu">
+      <TabItem Header="เมนูบูต">
         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="26,22,20,22">
           <StackPanel MaxWidth="1120">
 
-            <TextBlock Text="Boot menu" Style="{StaticResource H1}"/>
+            <TextBlock Text="เมนูบูต" Style="{StaticResource H1}"/>
             <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,18"
-                       Text="Read through the BCD WMI provider, so entry names come out right on a non-English Windows too."/>
+                       Text="อ่านผ่าน BCD WMI provider ชื่อรายการจึงแสดงถูกต้องแม้บน Windows ที่ไม่ใช่ภาษาอังกฤษ"/>
 
             <Border Style="{StaticResource Card}">
               <StackPanel>
@@ -1148,47 +1148,47 @@
                   <DataGrid.Columns>
                     <DataGridTextColumn Header="NAME" Binding="{Binding Description}" Width="*"/>
                     <DataGridTextColumn Header="ID"   Binding="{Binding Id}"          Width="310"/>
-                    <DataGridCheckBoxColumn Header="RUNNING NOW" Binding="{Binding IsCurrent}" Width="110"
+                    <DataGridCheckBoxColumn Header="ใช้อยู่ตอนนี้" Binding="{Binding IsCurrent}" Width="110"
                                             ElementStyle="{StaticResource GridCheck}"/>
                   </DataGrid.Columns>
                 </DataGrid>
 
                 <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
-                  <Button x:Name="BtnRefreshBoot"  Content="Refresh" Width="106"/>
-                  <Button x:Name="BtnRenameEntry"  Content="Rename" Width="106"/>
-                  <Button x:Name="BtnDefaultEntry" Content="Make default" Width="130"/>
-                  <Button x:Name="BtnDeleteEntry"  Content="Delete" Width="106" Style="{StaticResource DangerBtn}"/>
-                  <TextBlock Text="Timeout (s)" Foreground="{StaticResource TextDim}" Margin="20,0,10,0"/>
+                  <Button x:Name="BtnRefreshBoot"  Content="รีเฟรช" Width="106"/>
+                  <Button x:Name="BtnRenameEntry"  Content="เปลี่ยนชื่อ" Width="106"/>
+                  <Button x:Name="BtnDefaultEntry" Content="ตั้งเป็นค่าเริ่มต้น" Width="130"/>
+                  <Button x:Name="BtnDeleteEntry"  Content="ลบ" Width="106" Style="{StaticResource DangerBtn}"/>
+                  <TextBlock Text="เวลานับถอยหลัง (วิ)" Foreground="{StaticResource TextDim}" Margin="20,0,10,0"/>
                   <TextBox x:Name="TxtTimeout" Text="15" Width="66"/>
-                  <Button x:Name="BtnSetTimeout" Content="Apply" Width="88" Margin="8,0,0,0"/>
+                  <Button x:Name="BtnSetTimeout" Content="ใช้ค่านี้" Width="88" Margin="8,0,0,0"/>
                 </StackPanel>
 
                 <TextBlock Style="{StaticResource Hint}"
-                           Text="Deleting an entry only removes it from the boot menu. The files on that partition stay where they are - remove them with Disk Management afterwards if you want the space back."/>
+                           Text="การลบรายการ เอาออกแค่จากเมนูบูตเท่านั้น ไฟล์บนพาร์ทิชันนั้นยังอยู่ครบ ถ้าอยากได้ที่คืนให้ไปลบเองที่ Disk Management"/>
               </StackPanel>
             </Border>
 
             <Border Style="{StaticResource Card}">
               <StackPanel>
-                <TextBlock Style="{StaticResource Header}" Text="BOOT STORE BACKUPS" Margin="0,0,0,7"/>
+                <TextBlock Style="{StaticResource Header}" Text="ไฟล์สำรองของ BCD" Margin="0,0,0,7"/>
                 <StackPanel Orientation="Horizontal">
                   <ComboBox x:Name="CmbBcdBackups" Width="380" ItemTemplate="{StaticResource DisplayItem}"/>
-                  <Button x:Name="BtnBackupBcd"  Content="Back up now" Width="132" Margin="10,0,8,0"/>
-                  <Button x:Name="BtnRestoreBcd" Content="Restore selected" Width="152"
+                  <Button x:Name="BtnBackupBcd"  Content="สำรองเดี๋ยวนี้" Width="132" Margin="10,0,8,0"/>
+                  <Button x:Name="BtnRestoreBcd" Content="คืนค่าจากไฟล์ที่เลือก" Width="152"
                           Style="{StaticResource DangerBtn}" Margin="0"/>
                 </StackPanel>
                 <TextBlock Style="{StaticResource Hint}"
-                           Text="A backup is taken automatically before anything writes to the boot store. Restore puts the whole store back the way it was - use it if the boot menu ends up wrong."/>
+                           Text="ระบบสำรอง BCD ให้อัตโนมัติก่อนเขียนทุกครั้ง การคืนค่าจะเอา BCD กลับไปเป็นแบบเดิมทั้งก้อน ใช้ตอนเมนูบูตเพี้ยน"/>
               </StackPanel>
             </Border>
 
             <Border Style="{StaticResource Card}" Margin="0">
               <StackPanel>
-                <TextBlock Style="{StaticResource Header}" Text="SHORTCUTS" Margin="0,0,0,9"/>
+                <TextBlock Style="{StaticResource Header}" Text="ทางลัด" Margin="0,0,0,9"/>
                 <StackPanel Orientation="Horizontal">
-                  <Button x:Name="BtnReboot" Content="Reboot now" Width="136" Style="{StaticResource DangerBtn}"/>
-                  <Button x:Name="BtnOpenLogFolder" Content="Open log folder" Width="150"/>
-                  <Button x:Name="BtnOpenDiskMgmt" Content="Disk Management" Width="164" Margin="0"/>
+                  <Button x:Name="BtnReboot" Content="รีบูตเดี๋ยวนี้" Width="136" Style="{StaticResource DangerBtn}"/>
+                  <Button x:Name="BtnOpenLogFolder" Content="เปิดโฟลเดอร์ log" Width="150"/>
+                  <Button x:Name="BtnOpenDiskMgmt" Content="เปิด Disk Management" Width="164" Margin="0"/>
                 </StackPanel>
               </StackPanel>
             </Border>
@@ -1200,3 +1200,4 @@
     </TabControl>
   </DockPanel>
 </Window>
+

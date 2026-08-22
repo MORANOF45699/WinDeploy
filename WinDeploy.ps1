@@ -1,4 +1,4 @@
-<#
+﻿<#
     WinDeploy.ps1 - entry point.
 
     Point it at a Windows ISO and it applies the image to a partition you pick
@@ -130,7 +130,7 @@ function Confirm-WdDestructive {
     param([string]$Summary, [int]$DiskNumber)
 
     $answer = [Microsoft.VisualBasic.Interaction]::InputBox(
-        "$Summary`r`n`r`nType the disk number ($DiskNumber) to confirm:", 'Confirm', '')
+        "$Summary`r`n`r`nพิมพ์เลขดิสก์ ($DiskNumber) เพื่อยืนยัน", 'ยืนยัน', '')
     if ("$answer".Trim() -ne "$DiskNumber") {
         Write-WdLog 'Confirmation did not match - nothing was changed.' 'WARN'
         return $false
@@ -145,7 +145,7 @@ function Invoke-WdJob {
         [hashtable]$Arguments = @{},
         [scriptblock]$OnDone = $null
     )
-    if ($global:WdBus.Busy) { Show-WdError 'Another operation is still running.'; return }
+    if ($global:WdBus.Busy) { Show-WdError 'มีงานอื่นทำอยู่ รอให้เสร็จก่อน'; return }
 
     $script:OnDoneAction = $OnDone
     $ui.Progress.Value = 0
@@ -160,7 +160,7 @@ function Invoke-WdJob {
 }
 
 function Select-WdFile {
-    param([string]$Filter = 'Windows ISO (*.iso)|*.iso|All files (*.*)|*.*', [string]$Title = 'Select a file')
+    param([string]$Filter = 'Windows ISO (*.iso)|*.iso|All files (*.*)|*.*', [string]$Title = 'เลือกไฟล์')
     $dlg = New-Object System.Windows.Forms.OpenFileDialog
     $dlg.Filter = $Filter
     $dlg.Title = $Title
@@ -169,7 +169,7 @@ function Select-WdFile {
 }
 
 function Select-WdFolder {
-    param([string]$Description = 'Select a folder')
+    param([string]$Description = 'เลือกโฟลเดอร์')
     $dlg = New-Object System.Windows.Forms.FolderBrowserDialog
     $dlg.Description = $Description
     $dlg.ShowNewFolderButton = $true
@@ -260,9 +260,9 @@ $ui.BtnBrowseIso.Add_Click({
 
 $ui.BtnLoadIso.Add_Click({
     $path = "$($ui.TxtIso.Text)".Trim()
-    if (-not $path) { Show-WdError 'Pick an ISO file or an extracted folder first.'; return }
+    if (-not $path) { Show-WdError 'เลือกไฟล์ ISO หรือโฟลเดอร์ที่แตกไว้ก่อน'; return }
 
-    Invoke-WdJob -Name 'Reading the ISO' -Arguments @{ Path = $path } -Script {
+    Invoke-WdJob -Name 'กำลังอ่านไฟล์ ISO' -Arguments @{ Path = $path } -Script {
         param($Path)
         $src = $null
         try {
@@ -277,7 +277,7 @@ $ui.BtnLoadIso.Add_Click({
 })
 
 $ui.BtnRefreshDisks.Add_Click({
-    Invoke-WdJob -Name 'Reading disks' -Script {
+    Invoke-WdJob -Name 'กำลังอ่านดิสก์' -Script {
         Write-WdProgress 30 'Reading disks'
         Publish-WdResult 'disks' (Get-WdDisks)
         Write-WdProgress 100 'Disks read'
@@ -321,7 +321,7 @@ $ui.ChkInjectDrivers.Add_Click({
     $ui.BtnBrowseInject.IsEnabled = $on
 })
 $ui.BtnBrowseInject.Add_Click({
-    $f = Select-WdFolder 'Select a driver backup folder'
+    $f = Select-WdFolder 'เลือกโฟลเดอร์ที่สำรองไดร์เวอร์ไว้'
     if ($f) { $ui.TxtInjectPath.Text = $f }
 })
 $ui.ChkUnattend.Add_Click({
@@ -335,9 +335,9 @@ $ui.BtnInstall.Add_Click({
     $edition = $ui.CmbEdition.SelectedItem
     $disk = $ui.GridDisks.SelectedItem
 
-    if (-not $isoPath) { Show-WdError 'Pick a Windows source first.'; return }
-    if (-not $edition) { Show-WdError 'Read the ISO and pick an edition.'; return }
-    if (-not $disk)    { Show-WdError 'Pick a target disk.'; return }
+    if (-not $isoPath) { Show-WdError 'เลือกไฟล์ต้นทาง Windows ก่อน'; return }
+    if (-not $edition) { Show-WdError 'กดอ่านไฟล์ ISO แล้วเลือกรุ่นก่อน'; return }
+    if (-not $disk)    { Show-WdError 'เลือกดิสก์ปลายทางก่อน'; return }
 
     $mode = if ($ui.RadNewPart.IsChecked) { 'NewPartition' } else { 'ExistingPartition' }
     $sizeGB = 0.0
@@ -346,7 +346,7 @@ $ui.BtnInstall.Add_Click({
 
     if ($mode -eq 'NewPartition') {
         if (-not [double]::TryParse("$($ui.TxtSizeGB.Text)".Trim(), [ref]$sizeGB) -or $sizeGB -lt 25) {
-            Show-WdError 'Enter a partition size of at least 25 GB.'; return
+            Show-WdError 'ใส่ขนาดพาร์ทิชันอย่างน้อย 25 GB'; return
         }
         if ($ui.CmbShrink.SelectedItem) { $shrinkFrom = [int]$ui.CmbShrink.SelectedItem.Number }
         $summary = "Disk $($disk.DiskNumber) ($($disk.FriendlyName)):`r`n" +
@@ -355,8 +355,8 @@ $ui.BtnInstall.Add_Click({
                    "`r`n - apply $($edition.Name)`r`n - add a boot menu entry named `"$($ui.TxtEntryName.Text)`""
     } else {
         $part = $ui.GridPartitions.SelectedItem
-        if (-not $part) { Show-WdError 'Pick the partition to install onto.'; return }
-        if ($part.IsSystemVolume) { Show-WdError 'That is the volume this Windows is running from.'; return }
+        if (-not $part) { Show-WdError 'เลือกพาร์ทิชันที่จะลง Windows'; return }
+        if ($part.IsSystemVolume) { Show-WdError 'นั่นคือไดรฟ์ที่ Windows ตัวนี้รันอยู่'; return }
         $existingPart = [int]$part.PartitionNumber
         $summary = "Disk $($disk.DiskNumber) partition $existingPart ($($part.DriveLetter) $($part.Label), $($part.SizeGB))`r`n" +
                    "WILL BE ERASED, then $($edition.Name) is installed onto it."
@@ -382,8 +382,8 @@ $ui.BtnInstall.Add_Click({
         UserName                = "$($ui.TxtUserName.Text)".Trim()
     }
 
-    Invoke-WdJob -Name 'Installing Windows' -Arguments $jobArgs -OnDone {
-        Show-WdInfo "Done. Reboot and pick the new entry from the boot menu.`r`n`r`nThe Boot menu tab can rename it or set it as the default."
+    Invoke-WdJob -Name 'กำลังลง Windows' -Arguments $jobArgs -OnDone {
+        Show-WdInfo "เสร็จแล้ว รีบูตแล้วเลือกรายการใหม่จากเมนูบูต`r`n`r`nเปลี่ยนชื่อหรือตั้งเป็นค่าเริ่มต้นได้ที่แท็บเมนูบูต"
     } -Script {
         param($SourcePath, $ImageIndex, $DiskNumber, $TargetMode, $NewPartitionGB, $ShrinkFromPartition,
               $ExistingPartitionNumber, $EntryName, $DriverBackupPath, $UnattendTemplate, $ComputerName, $UserName)
@@ -442,8 +442,8 @@ $ui.BtnRefreshSetupHost.Add_Click({ Update-WdSetupHosts })
 $ui.BtnMakeSetupEntry.Add_Click({
     $iso = "$($ui.TxtSetupIso.Text)".Trim()
     $host_ = $ui.CmbSetupHost.SelectedItem
-    if (-not $iso)   { Show-WdError 'Pick a Windows source first.'; return }
-    if (-not $host_) { Show-WdError 'Pick a volume to keep the setup files on.'; return }
+    if (-not $iso)   { Show-WdError 'เลือกไฟล์ต้นทาง Windows ก่อน'; return }
+    if (-not $host_) { Show-WdError 'เลือกไดรฟ์ที่จะเก็บไฟล์ติดตั้ง'; return }
 
     if (-not $host_.Fits) {
         Show-WdError "$($host_.Drive) does not have enough free space for the setup files."
@@ -454,17 +454,17 @@ $ui.BtnMakeSetupEntry.Add_Click({
             "The files would go on $($host_.Drive), which is the system volume.`r`n`r`n" +
             "Setup will not be able to wipe $($host_.Drive) with its own source files on it. " +
             "Use a data partition instead if you want a clean wipe.`r`n`r`nCarry on anyway?",
-            'System volume', 'YesNo', 'Warning')
+            'ไดรฟ์ระบบ', 'YesNo', 'Warning')
         if ($answer -ne 'Yes') { return }
     }
 
     $answer = [Windows.MessageBox]::Show(
-        "Copy the installation files to $($host_.Drive)\WinDeploySetup and add a Setup boot entry?" +
+        "ก๊อปไฟล์ติดตั้งไปที่ $($host_.Drive)\WinDeploySetup แล้วเพิ่มรายการบูตเข้า Setup ไหม" +
         "`r`n`r`nThe boot store is backed up first. Nothing is erased by this step.",
-        'Confirm', 'YesNo', 'Question')
+        'ยืนยัน', 'YesNo', 'Question')
     if ($answer -ne 'Yes') { return }
 
-    Invoke-WdJob -Name 'Preparing the Setup boot entry' -Arguments @{
+    Invoke-WdJob -Name 'กำลังเตรียมรายการบูตเข้า Setup' -Arguments @{
         SourcePath = $iso
         HostDrive  = "$($host_.Drive)"
         EntryName  = "$($ui.TxtSetupEntryName.Text)".Trim()
@@ -495,16 +495,16 @@ $ui.BtnRemoveSetupEntry.Add_Click({
         $host_ = $ui.CmbSetupHost.SelectedItem
         if ($host_) { $folder = Join-Path "$($host_.Drive)" 'WinDeploySetup' }
     } else {
-        Show-WdError 'Pick the setup entry on the Boot menu tab first.'
+        Show-WdError 'ไปเลือกรายการบูตที่แท็บเมนูบูตก่อน'
         return
     }
 
     $answer = [Windows.MessageBox]::Show(
-        "Remove boot entry $id and delete`r`n$folder ?", 'Confirm', 'YesNo', 'Warning')
+        "ลบรายการบูต $id และลบโฟลเดอร์`r`n$folder ไหม", 'ยืนยัน', 'YesNo', 'Warning')
     if ($answer -ne 'Yes') { return }
 
-    Invoke-WdJob -Name 'Removing the Setup boot entry' -Arguments @{ Id = $id; Folder = $folder } `
-        -OnDone { $script:LastSetupEntry = $null; Update-WdBootGrid; Show-WdInfo 'Setup entry and files removed.' } -Script {
+    Invoke-WdJob -Name 'กำลังลบรายการบูตเข้า Setup' -Arguments @{ Id = $id; Folder = $folder } `
+        -OnDone { $script:LastSetupEntry = $null; Update-WdBootGrid; Show-WdInfo 'ลบรายการบูตกับไฟล์เรียบร้อย' } -Script {
         param($Id, $Folder)
         Uninstall-WdSetupBootEntry -Id $Id -Folder $Folder -DeleteFiles
     }
@@ -512,8 +512,8 @@ $ui.BtnRemoveSetupEntry.Add_Click({
 
 $ui.BtnRebootToSetup.Add_Click({
     $answer = [Windows.MessageBox]::Show(
-        "Reboot now into Windows Setup?`r`n`r`nSave your work first - this restarts immediately.",
-        'Confirm', 'YesNo', 'Warning')
+        "รีบูตเข้า Windows Setup เดี๋ยวนี้เลยไหม`r`n`r`nเซฟงานก่อน เครื่องจะรีสตาร์ททันที",
+        'ยืนยัน', 'YesNo', 'Warning')
     if ($answer -eq 'Yes') { Restart-Computer -Force }
 })
 
@@ -525,7 +525,7 @@ $ui.BtnBrowseUsbIso.Add_Click({
 $ui.BtnCopyIsoPath.Add_Click({ $ui.TxtUsbIso.Text = $ui.TxtIso.Text })
 
 $ui.BtnRefreshUsb.Add_Click({
-    Invoke-WdJob -Name 'Looking for USB disks' -Script {
+    Invoke-WdJob -Name 'กำลังหาแฟลชไดรฟ์' -Script {
         Write-WdProgress 30 'Looking for USB disks'
         Publish-WdResult 'usbdisks' (Get-WdDisks -UsbOnly)
         Write-WdProgress 100 'Done'
@@ -535,16 +535,16 @@ $ui.BtnRefreshUsb.Add_Click({
 $ui.BtnMakeUsb.Add_Click({
     $isoPath = "$($ui.TxtUsbIso.Text)".Trim()
     $disk = $ui.GridUsb.SelectedItem
-    if (-not $isoPath) { Show-WdError 'Pick a Windows source first.'; return }
-    if (-not $disk)    { Show-WdError 'Pick a USB disk.'; return }
+    if (-not $isoPath) { Show-WdError 'เลือกไฟล์ต้นทาง Windows ก่อน'; return }
+    if (-not $disk)    { Show-WdError 'เลือกแฟลชไดรฟ์ก่อน'; return }
 
     $summary = "EVERYTHING on disk $($disk.DiskNumber) ($($disk.FriendlyName), $($disk.SizeGB)) will be erased" +
                "`r`nand replaced with a bootable Windows installer."
     if (-not (Confirm-WdDestructive $summary $disk.DiskNumber)) { return }
 
-    Invoke-WdJob -Name 'Creating bootable USB' -Arguments @{
+    Invoke-WdJob -Name 'กำลังทำแฟลชไดรฟ์บูต' -Arguments @{
         IsoPath = $isoPath; DiskNumber = [int]$disk.DiskNumber; Label = "$($ui.TxtUsbLabel.Text)".Trim()
-    } -OnDone { Show-WdInfo 'The USB stick is ready.' } -Script {
+    } -OnDone { Show-WdInfo 'แฟลชไดรฟ์พร้อมใช้แล้ว' } -Script {
         param($IsoPath, $DiskNumber, $Label)
         $src = $null
         try {
@@ -561,7 +561,7 @@ $ui.BtnMakeUsb.Add_Click({
 $ui.TxtBackupDest.Text = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'WinDeploy'
 
 $ui.BtnScanDrivers.Add_Click({
-    Invoke-WdJob -Name 'Scanning drivers' -Arguments @{ IncludeInbox = [bool]$ui.ChkIncludeInbox.IsChecked } -Script {
+    Invoke-WdJob -Name 'กำลังสแกนไดร์เวอร์' -Arguments @{ IncludeInbox = [bool]$ui.ChkIncludeInbox.IsChecked } -Script {
         param($IncludeInbox)
         Publish-WdResult 'drivers' (Get-WdInstalledDrivers -IncludeInbox:$IncludeInbox)
     }
@@ -581,32 +581,32 @@ $ui.BtnSelectNone.Add_Click({
 })
 
 $ui.BtnBrowseBackupDest.Add_Click({
-    $f = Select-WdFolder 'Where should the driver backup go?'
+    $f = Select-WdFolder 'จะเก็บไฟล์สำรองไดร์เวอร์ไว้ที่ไหน'
     if ($f) { $ui.TxtBackupDest.Text = $f }
 })
 
 $ui.BtnBackupDrivers.Add_Click({
-    if (-not $script:AllDrivers) { Show-WdError 'Scan the drivers first.'; return }
+    if (-not $script:AllDrivers) { Show-WdError 'กดสแกนไดร์เวอร์ก่อน'; return }
     $selected = @($script:AllDrivers | Where-Object { $_.Selected })
-    if ($selected.Count -eq 0) { Show-WdError 'No drivers ticked.'; return }
+    if ($selected.Count -eq 0) { Show-WdError 'ยังไม่ได้ติ๊กไดร์เวอร์สักตัว'; return }
 
     $dest = "$($ui.TxtBackupDest.Text)".Trim()
-    if (-not $dest) { Show-WdError 'Pick a destination folder.'; return }
+    if (-not $dest) { Show-WdError 'เลือกโฟลเดอร์ปลายทางก่อน'; return }
 
-    Invoke-WdJob -Name "Backing up $($selected.Count) drivers" -Arguments @{
+    Invoke-WdJob -Name "กำลังสำรองไดร์เวอร์ $($selected.Count) ตัว" -Arguments @{
         Items = $selected; Destination = $dest; Compress = [bool]$ui.ChkZip.IsChecked
-    } -OnDone { Show-WdInfo 'Driver backup finished. See the log for the exact folder.' } -Script {
+    } -OnDone { Show-WdInfo 'สำรองไดร์เวอร์เสร็จแล้ว ดูโฟลเดอร์ที่เก็บได้ใน log' } -Script {
         param($Items, $Destination, $Compress)
         Export-WdDrivers -Items $Items -Destination $Destination -Compress:$Compress | Out-Null
     }
 })
 
 $ui.BtnBrowseRestoreFolder.Add_Click({
-    $f = Select-WdFolder 'Select the driver backup folder'
+    $f = Select-WdFolder 'เลือกโฟลเดอร์ที่สำรองไดร์เวอร์ไว้'
     if ($f) { $ui.TxtRestoreSrc.Text = $f }
 })
 $ui.BtnBrowseRestoreZip.Add_Click({
-    $f = Select-WdFile 'Zip archive (*.zip)|*.zip' 'Select the driver backup zip'
+    $f = Select-WdFile 'Zip archive (*.zip)|*.zip' 'เลือกไฟล์ zip ที่สำรองไดร์เวอร์ไว้'
     if ($f) { $ui.TxtRestoreSrc.Text = $f }
 })
 
@@ -626,25 +626,25 @@ $ui.RadRestoreOnline.Add_Checked({ $ui.CmbOfflineDrive.IsEnabled = $false })
 
 $ui.BtnRestoreDrivers.Add_Click({
     $src = "$($ui.TxtRestoreSrc.Text)".Trim()
-    if (-not $src) { Show-WdError 'Pick a driver backup folder or zip.'; return }
+    if (-not $src) { Show-WdError 'เลือกโฟลเดอร์หรือไฟล์ zip ที่สำรองไดร์เวอร์ไว้'; return }
 
     if ($ui.RadRestoreOnline.IsChecked) {
         $answer = [Windows.MessageBox]::Show(
-            "Install every driver in`r`n$src`r`ninto the Windows running right now?",
-            'Confirm', 'YesNo', 'Question')
+            "ติดตั้งไดร์เวอร์ทุกตัวใน`r`n$src`r`nเข้า Windows ที่ใช้อยู่ตอนนี้เลยไหม",
+            'ยืนยัน', 'YesNo', 'Question')
         if ($answer -ne 'Yes') { return }
 
-        Invoke-WdJob -Name 'Restoring drivers (online)' -Arguments @{ Source = $src } `
-            -OnDone { Show-WdInfo 'Drivers installed. Reboot if anything still looks wrong.' } -Script {
+        Invoke-WdJob -Name 'กำลังคืนไดร์เวอร์ (เครื่องที่ใช้อยู่)' -Arguments @{ Source = $src } `
+            -OnDone { Show-WdInfo 'ติดตั้งไดร์เวอร์เสร็จแล้ว ถ้ายังมีอะไรผิดปกติให้รีบูต' } -Script {
             param($Source)
             Restore-WdDriversOnline -Source $Source | Out-Null
         }
     } else {
         $target = $ui.CmbOfflineDrive.SelectedItem
-        if (-not $target) { Show-WdError 'Pick the Windows volume to inject into.'; return }
+        if (-not $target) { Show-WdError 'เลือกไดรฟ์ Windows ที่จะยัดไดร์เวอร์เข้าไป'; return }
 
-        Invoke-WdJob -Name "Injecting drivers into $target" -Arguments @{ Source = $src; Target = "$target" } `
-            -OnDone { Show-WdInfo 'Drivers injected into the offline Windows.' } -Script {
+        Invoke-WdJob -Name "กำลังยัดไดร์เวอร์เข้า $target" -Arguments @{ Source = $src; Target = "$target" } `
+            -OnDone { Show-WdInfo 'ยัดไดร์เวอร์เข้า Windows ตัวนั้นเรียบร้อย' } -Script {
             param($Source, $Target)
             Restore-WdDriversOffline -Source $Source -TargetDrive $Target
         }
@@ -700,7 +700,7 @@ $ui.CmbReclaimDisk.Add_SelectionChanged({ Update-WdReclaimLayout })
 $ui.BtnAnalyzeReclaim.Add_Click({
     $disk = $ui.CmbReclaimDisk.SelectedItem
     $target = $ui.CmbReclaimTarget.SelectedItem
-    if (-not $disk -or -not $target) { Show-WdError 'Pick a disk and a partition first.'; return }
+    if (-not $disk -or -not $target) { Show-WdError 'เลือกดิสก์กับพาร์ทิชันก่อน'; return }
     try {
         $plan = Get-WdReclaimPlan -DiskNumber $disk.Number -PartitionNumber $target.Number `
                                   -RecreateRecovery:([bool]$ui.ChkRecreateRecovery.IsChecked)
@@ -716,7 +716,7 @@ function Start-WdReclaim {
 
     $disk = $ui.CmbReclaimDisk.SelectedItem
     $target = $ui.CmbReclaimTarget.SelectedItem
-    if (-not $disk -or -not $target) { Show-WdError 'Pick a disk and a partition first.'; return }
+    if (-not $disk -or -not $target) { Show-WdError 'เลือกดิสก์กับพาร์ทิชันก่อน'; return }
 
     $recreate = [bool]$ui.ChkRecreateRecovery.IsChecked
     try {
@@ -732,7 +732,7 @@ function Start-WdReclaim {
         if (-not (Confirm-WdDestructive $ui.TxtReclaimPlan.Text $disk.Number)) { return }
     }
 
-    $name = if ($DryRun) { 'Reclaim space (dry run)' } else { 'Reclaiming space' }
+    $name = if ($DryRun) { 'ลองเดินแผนทวงที่คืน' } else { 'กำลังทวงที่คืน' }
     Invoke-WdJob -Name $name -Arguments @{
         DiskNumber = [int]$disk.Number; PartitionNumber = [int]$target.Number
         Recreate = $recreate; DryRun = $DryRun
@@ -786,23 +786,23 @@ $ui.BtnBackupBcd.Add_Click({
 
 $ui.BtnRestoreBcd.Add_Click({
     $sel = $ui.CmbBcdBackups.SelectedItem
-    if (-not $sel) { Show-WdError 'Pick a backup.'; return }
+    if (-not $sel) { Show-WdError 'เลือกไฟล์สำรองก่อน'; return }
     $answer = [Windows.MessageBox]::Show(
         "Replace the entire boot store with`r`n$($sel.Path) ?`r`n`r`n" +
         'Every boot entry added since that backup disappears.',
-        'Confirm', 'YesNo', 'Warning')
+        'ยืนยัน', 'YesNo', 'Warning')
     if ($answer -ne 'Yes') { return }
     try {
         Restore-WdBcd -Path $sel.Path
         Update-WdBootGrid
-        Show-WdInfo 'Boot store restored.'
+        Show-WdInfo 'คืนค่า BCD เรียบร้อย'
     } catch { Show-WdError $_.Exception.Message }
 })
 
 $ui.BtnRenameEntry.Add_Click({
     $entry = $ui.GridBoot.SelectedItem
-    if (-not $entry) { Show-WdError 'Pick an entry.'; return }
-    $newName = [Microsoft.VisualBasic.Interaction]::InputBox('New name for this boot entry:', 'Rename', $entry.Description)
+    if (-not $entry) { Show-WdError 'เลือกรายการก่อน'; return }
+    $newName = [Microsoft.VisualBasic.Interaction]::InputBox('ตั้งชื่อใหม่ให้รายการบูตนี้', 'เปลี่ยนชื่อ', $entry.Description)
     if (-not "$newName".Trim()) { return }
     try {
         Set-WdBootEntryDescription -Id $entry.Id -Description "$newName".Trim()
@@ -812,7 +812,7 @@ $ui.BtnRenameEntry.Add_Click({
 
 $ui.BtnDefaultEntry.Add_Click({
     $entry = $ui.GridBoot.SelectedItem
-    if (-not $entry) { Show-WdError 'Pick an entry.'; return }
+    if (-not $entry) { Show-WdError 'เลือกรายการก่อน'; return }
     try {
         Set-WdDefaultBootEntry -Id $entry.Id
         Update-WdBootGrid
@@ -821,10 +821,10 @@ $ui.BtnDefaultEntry.Add_Click({
 
 $ui.BtnDeleteEntry.Add_Click({
     $entry = $ui.GridBoot.SelectedItem
-    if (-not $entry) { Show-WdError 'Pick an entry.'; return }
+    if (-not $entry) { Show-WdError 'เลือกรายการก่อน'; return }
     $answer = [Windows.MessageBox]::Show(
-        "Remove `"$($entry.Description)`" from the boot menu?`r`n`r`nThe files on that partition are left alone.",
-        'Confirm', 'YesNo', 'Warning')
+        "เอา `"$($entry.Description)`" ออกจากเมนูบูตไหม`r`n`r`nไฟล์บนพาร์ทิชันนั้นไม่ถูกแตะ",
+        'ยืนยัน', 'YesNo', 'Warning')
     if ($answer -ne 'Yes') { return }
     try {
         Remove-WdBootEntry -Id $entry.Id
@@ -835,13 +835,13 @@ $ui.BtnDeleteEntry.Add_Click({
 $ui.BtnSetTimeout.Add_Click({
     $seconds = 0
     if (-not [int]::TryParse("$($ui.TxtTimeout.Text)".Trim(), [ref]$seconds) -or $seconds -lt 0 -or $seconds -gt 999) {
-        Show-WdError 'Enter a timeout between 0 and 999 seconds.'; return
+        Show-WdError 'ใส่เวลาระหว่าง 0 ถึง 999 วินาที'; return
     }
     try { Set-WdBootTimeout -Seconds $seconds } catch { Show-WdError $_.Exception.Message }
 })
 
 $ui.BtnReboot.Add_Click({
-    $answer = [Windows.MessageBox]::Show('Reboot this PC now?', 'Confirm', 'YesNo', 'Warning')
+    $answer = [Windows.MessageBox]::Show('รีบูตเครื่องเดี๋ยวนี้เลยไหม', 'ยืนยัน', 'YesNo', 'Warning')
     if ($answer -eq 'Yes') { Restart-Computer -Force }
 })
 $ui.BtnOpenLogFolder.Add_Click({ Start-Process explorer.exe (Split-Path -Parent $script:LogFile) })
@@ -868,7 +868,7 @@ $window.Add_Closing({
     if ($global:WdBus.Busy) {
         $answer = [Windows.MessageBox]::Show(
             "`"$($global:WdBus.TaskName)`" is still running. Closing now could leave the disk half-written. Close anyway?",
-            'Still working', 'YesNo', 'Warning')
+            'ยังทำงานอยู่', 'YesNo', 'Warning')
         if ($answer -ne 'Yes') { $e.Cancel = $true; return }
         Stop-WdTask
     }
