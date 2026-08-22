@@ -41,7 +41,7 @@ if (-not $isAdmin -or -not $isSta) {
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Windows.Forms, Microsoft.VisualBasic
 
 $script:ModulePaths = @(
-    'Logging', 'Models', 'Runner', 'IsoImage', 'DiskTarget', 'DriverStore', 'ApplyImage', 'SetupBoot'
+    'Logging', 'Models', 'Runner', 'IsoImage', 'DiskTarget', 'DriverStore', 'ApplyImage', 'SetupBoot', 'DiskReclaim'
 ) | ForEach-Object { Join-Path $script:Root "modules\$_.psm1" }
 
 foreach ($m in $script:ModulePaths) {
@@ -77,7 +77,8 @@ function Set-WdBusy {
                      'BtnLoadIso', 'BtnRefreshDisks', 'BtnRefreshUsb', 'BtnRefreshBoot',
                      'BtnRenameEntry', 'BtnDeleteEntry', 'BtnDefaultEntry', 'BtnSetTimeout', 'BtnReboot',
                      'BtnMakeSetupEntry', 'BtnRemoveSetupEntry', 'BtnRebootToSetup',
-                     'BtnBackupBcd', 'BtnRestoreBcd', 'BtnRefreshSetupHost')) {
+                     'BtnBackupBcd', 'BtnRestoreBcd', 'BtnRefreshSetupHost',
+                     'BtnAnalyzeReclaim', 'BtnReclaimDryRun', 'BtnReclaimGo', 'BtnRefreshReclaim')) {
         if ($ui[$n]) { $ui[$n].IsEnabled = -not $Busy }
     }
     $ui.BtnCancel.IsEnabled = $Busy
@@ -650,6 +651,104 @@ $ui.BtnRestoreDrivers.Add_Click({
     }
 })
 
+# =========================================================== RECLAIM SPACE TAB =
+function Update-WdReclaimDisks {
+    try {
+        $items = New-Object System.Collections.ObjectModel.ObservableCollection[object]
+        foreach ($d in (Get-WdDisks)) {
+            $items.Add([pscustomobject]@{
+                Number  = $d.DiskNumber
+                Display = "Disk $($d.DiskNumber)  -  $($d.FriendlyName)  $($d.SizeGB)"
+            })
+        }
+        $ui.CmbReclaimDisk.ItemsSource = $items
+        if ($items.Count) { $ui.CmbReclaimDisk.SelectedIndex = 0 }
+
+        $winre = Get-WdWinReState
+        $ui.TxtWinReState.Text = if ($winre.Enabled) { "WinRE enabled at $($winre.LocationPath)" }
+                                 elseif ($winre.ConfigFound) { 'WinRE is currently disabled' }
+                                 else { 'no WinRE configuration found' }
+    } catch {
+        Write-WdLog "Could not list disks: $($_.Exception.Message)" 'WARN'
+    }
+}
+
+function Update-WdReclaimLayout {
+    $disk = $ui.CmbReclaimDisk.SelectedItem
+    if (-not $disk) { return }
+    try {
+        $ui.GridLayout.ItemsSource = Get-WdDiskMap -DiskNumber $disk.Number
+
+        $targets = New-Object System.Collections.ObjectModel.ObservableCollection[object]
+        foreach ($p in (Get-WdPartitions -DiskNumber $disk.Number)) {
+            if ($p.SizeBytes -lt 1GB) { continue }        # skip ESP / MSR
+            $targets.Add([pscustomobject]@{
+                Number  = $p.PartitionNumber
+                Display = "Partition $($p.PartitionNumber)  $($p.DriveLetter) $($p.Label)  -  $($p.SizeGB)"
+            })
+        }
+        $ui.CmbReclaimTarget.ItemsSource = $targets
+        if ($targets.Count) { $ui.CmbReclaimTarget.SelectedIndex = 0 }
+    } catch {
+        Write-WdLog "Could not read the disk layout: $($_.Exception.Message)" 'WARN'
+    }
+}
+
+$ui.BtnRefreshReclaim.Add_Click({ Update-WdReclaimDisks; Update-WdReclaimLayout })
+$ui.CmbReclaimDisk.Add_SelectionChanged({ Update-WdReclaimLayout })
+
+$ui.BtnAnalyzeReclaim.Add_Click({
+    $disk = $ui.CmbReclaimDisk.SelectedItem
+    $target = $ui.CmbReclaimTarget.SelectedItem
+    if (-not $disk -or -not $target) { Show-WdError 'Pick a disk and a partition first.'; return }
+    try {
+        $plan = Get-WdReclaimPlan -DiskNumber $disk.Number -PartitionNumber $target.Number `
+                                  -RecreateRecovery:([bool]$ui.ChkRecreateRecovery.IsChecked)
+        $ui.TxtReclaimPlan.Text = Format-WdReclaimPlan -Plan $plan
+    } catch {
+        $ui.TxtReclaimPlan.Text = "Analysis failed: $($_.Exception.Message)"
+        Show-WdError $_.Exception.Message
+    }
+})
+
+function Start-WdReclaim {
+    param([bool]$DryRun)
+
+    $disk = $ui.CmbReclaimDisk.SelectedItem
+    $target = $ui.CmbReclaimTarget.SelectedItem
+    if (-not $disk -or -not $target) { Show-WdError 'Pick a disk and a partition first.'; return }
+
+    $recreate = [bool]$ui.ChkRecreateRecovery.IsChecked
+    try {
+        $plan = Get-WdReclaimPlan -DiskNumber $disk.Number -PartitionNumber $target.Number -RecreateRecovery:$recreate
+    } catch {
+        Show-WdError $_.Exception.Message; return
+    }
+
+    $ui.TxtReclaimPlan.Text = Format-WdReclaimPlan -Plan $plan
+    if (-not $plan.CanProceed) { Show-WdError $plan.Reason; return }
+
+    if (-not $DryRun) {
+        if (-not (Confirm-WdDestructive $ui.TxtReclaimPlan.Text $disk.Number)) { return }
+    }
+
+    $name = if ($DryRun) { 'Reclaim space (dry run)' } else { 'Reclaiming space' }
+    Invoke-WdJob -Name $name -Arguments @{
+        DiskNumber = [int]$disk.Number; PartitionNumber = [int]$target.Number
+        Recreate = $recreate; DryRun = $DryRun
+    } -OnDone {
+        Update-WdReclaimLayout
+        Update-WdBcdBackupList
+    } -Script {
+        param($DiskNumber, $PartitionNumber, $Recreate, $DryRun)
+        Invoke-WdReclaimSpace -DiskNumber $DiskNumber -PartitionNumber $PartitionNumber `
+                              -RecreateRecovery:$Recreate -DryRun:$DryRun | Out-Null
+    }
+}
+
+$ui.BtnReclaimDryRun.Add_Click({ Start-WdReclaim $true })
+$ui.BtnReclaimGo.Add_Click({ Start-WdReclaim $false })
+
 # ============================================================== BOOT MENU TAB =
 function Update-WdBootGrid {
     try {
@@ -784,6 +883,8 @@ $window.Add_ContentRendered({
         Update-WdBootGrid
         Update-WdBcdBackupList
         Update-WdSetupHosts
+        Update-WdReclaimDisks
+        Update-WdReclaimLayout
     } catch {
         Write-WdLog "Startup scan failed: $($_.Exception.Message)" 'WARN'
     }

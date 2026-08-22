@@ -1048,6 +1048,91 @@
         </Grid>
       </TabItem>
 
+      <!-- ============ RECLAIM SPACE ============ -->
+      <TabItem Header="Reclaim space">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="26,22,20,22">
+          <StackPanel MaxWidth="1120">
+
+            <TextBlock Text="Reclaim space after a reinstall" Style="{StaticResource H1}"/>
+            <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,18"
+                       Text="Windows can only grow a partition into free space that sits directly after it. A Recovery partition parked in the middle is what greys out Extend Volume in Disk Management. This moves WinRE out of the way properly, deletes the stale recovery partition, extends, then builds a fresh recovery partition at the end of the disk and re-registers WinRE."/>
+
+            <Border Style="{StaticResource Card}">
+              <StackPanel>
+                <TextBlock Style="{StaticResource Header}" Text="1  DISK LAYOUT" Margin="0,0,0,7"/>
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="260"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Text="Disk" Foreground="{StaticResource TextDim}" Margin="0,0,10,0"/>
+                  <ComboBox  Grid.Column="1" x:Name="CmbReclaimDisk" ItemTemplate="{StaticResource DisplayItem}"/>
+                  <Button    Grid.Column="2" x:Name="BtnRefreshReclaim" Content="Refresh" Width="106" Margin="10,0,0,0"/>
+                  <TextBlock Grid.Column="3" x:Name="TxtWinReState" Foreground="{StaticResource Accent}"
+                             Margin="14,0,0,0" FontSize="12"/>
+                </Grid>
+
+                <DataGrid x:Name="GridLayout" Height="190" Margin="0,12,0,0">
+                  <DataGrid.Columns>
+                    <DataGridTextColumn Header="KIND"   Binding="{Binding Kind}"   Width="110"/>
+                    <DataGridTextColumn Header="PART"   Binding="{Binding Number}" Width="60"/>
+                    <DataGridTextColumn Header="SIZE"   Width="110"
+                                        Binding="{Binding SizeGB, StringFormat={}{0:N2} GB}"/>
+                    <DataGridTextColumn Header="DETAIL" Binding="{Binding Note}"   Width="*"/>
+                  </DataGrid.Columns>
+                </DataGrid>
+                <TextBlock Style="{StaticResource Hint}"
+                           Text="Listed in the order they physically sit on the disk, unallocated gaps included."/>
+              </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+              <StackPanel>
+                <TextBlock Style="{StaticResource Header}" Text="2  PARTITION TO GROW" Margin="0,0,0,7"/>
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                  </Grid.ColumnDefinitions>
+                  <ComboBox Grid.Column="0" x:Name="CmbReclaimTarget" ItemTemplate="{StaticResource DisplayItem}"/>
+                  <Button   Grid.Column="1" x:Name="BtnAnalyzeReclaim" Content="Analyze" Width="120" Margin="10,0,0,0"/>
+                </Grid>
+                <CheckBox x:Name="ChkRecreateRecovery" IsChecked="True" Margin="0,14,0,0"
+                          Content="Rebuild the recovery partition afterwards and re-enable WinRE (recommended)"/>
+                <TextBlock Style="{StaticResource Hint}"
+                           Text="Unticked, WinRE stays disabled - Reset this PC and startup repair will not work until you turn it back on."/>
+              </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource Card}">
+              <StackPanel>
+                <TextBlock Style="{StaticResource Header}" Text="3  PLAN" Margin="0,0,0,7"/>
+                <Border Background="#0D0F14" BorderBrush="{StaticResource Line}" BorderThickness="1"
+                        CornerRadius="6" Padding="14,12" MinHeight="150">
+                  <TextBox x:Name="TxtReclaimPlan" Background="Transparent" BorderThickness="0"
+                           Foreground="{StaticResource Text}" FontFamily="Cascadia Mono, Consolas"
+                           FontSize="12" IsReadOnly="True" TextWrapping="Wrap"
+                           VerticalScrollBarVisibility="Auto"
+                           Text="Pick a disk and a partition, then press Analyze. Nothing is touched until you press Reclaim."/>
+                </Border>
+              </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource NoteWarn}" Margin="0,0,0,14">
+              <TextBlock TextWrapping="Wrap" Foreground="{StaticResource Warn}"
+                         Text="Only recovery partitions are ever deleted. If anything else stands in the way - the EFI partition, or a partition with your data on it - the plan stops there and says so instead of removing it."/>
+            </Border>
+
+            <StackPanel Orientation="Horizontal">
+              <Button x:Name="BtnReclaimDryRun" Content="Dry run" Width="130"/>
+              <Button x:Name="BtnReclaimGo" Content="Reclaim space" Style="{StaticResource Primary}" Width="190"/>
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </TabItem>
+
       <!-- ============ BOOT MENU ============ -->
       <TabItem Header="Boot menu">
         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="26,22,20,22">

@@ -180,13 +180,113 @@ function Install-WdSetupBootEntry {
         Write-WdLog 'Set as a one-time boot target - the next restart goes to Setup, after that the menu is back to normal.' 'OK'
     }
 
+    Write-WdProgress 96 'Writing the partition cheat sheet'
+    $cheatSheet = ''
+    try {
+        $cheatSheet = Write-WdSetupCheatSheet -HostDrive $drive -FolderName $FolderName
+    } catch {
+        Write-WdLog "Could not build the partition cheat sheet: $($_.Exception.Message)" 'WARN'
+    }
+
     Write-WdProgress 100 'Setup entry ready'
     Write-WdLog "Reboot and pick `"$EntryName`" to run Windows Setup from the disk." 'OK'
     Write-WdLog "IMPORTANT: do not delete $drive in Setup - the installation files live there." 'WARN'
 
     return [pscustomobject]@{
-        Id = $id; Folder = $target; HostDrive = $drive; BcdBackup = $backup; EntryName = $EntryName
+        Id = $id; Folder = $target; HostDrive = $drive; BcdBackup = $backup
+        EntryName = $EntryName; CheatSheet = $cheatSheet
     }
+}
+
+function Write-WdSetupCheatSheet {
+    <#
+        Windows Setup's custom-install screen lists partitions by number and
+        size only - no drive letters, no labels. That makes it very easy to
+        delete the partition holding the installation files by accident, which
+        kills the install halfway through.
+
+        So before rebooting, write down the layout with the sizes Setup will
+        show, and mark the one that has to survive.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$HostDrive,
+        [string]$FolderName = 'WinDeploySetup'
+    )
+
+    $drive = $HostDrive.TrimEnd('\', ':') + ':'
+    $letter = $drive.TrimEnd(':')
+
+    $part = Get-Partition -DriveLetter $letter -ErrorAction Stop
+    $diskNumber = [int]$part.DiskNumber
+    $keepNumber = [int]$part.PartitionNumber
+
+    $lines = New-Object System.Collections.ArrayList
+    [void]$lines.Add('WinDeploy - read this before you touch anything in Windows Setup')
+    [void]$lines.Add('=================================================================')
+    [void]$lines.Add('')
+    [void]$lines.Add('Setup shows partitions by number and size only. Match on SIZE.')
+    [void]$lines.Add('')
+    [void]$lines.Add(('Disk {0} as it looks right now:' -f $diskNumber))
+    [void]$lines.Add('')
+    [void]$lines.Add('  Part  Size          What Setup calls it   Do this')
+    [void]$lines.Add('  ----  ------------  --------------------  ----------------------------')
+
+    foreach ($p in (Get-Partition -DiskNumber $diskNumber | Sort-Object PartitionNumber)) {
+        $sizeMb = [math]::Round($p.Size / 1MB, 0)
+        $sizeTxt = '{0:N0} MB' -f $sizeMb
+        if ($p.Size -ge 1GB) { $sizeTxt = '{0:N1} GB' -f ($p.Size / 1GB) }
+
+        $vol = $null
+        if ($p.DriveLetter) { $vol = Get-Volume -DriveLetter $p.DriveLetter -ErrorAction SilentlyContinue }
+
+        $kind = switch ("$($p.Type)") {
+            'System'   { 'System' }
+            'Reserved' { 'MSR (Reserved)' }
+            'Recovery' { 'Recovery' }
+            default    { 'Primary' }
+        }
+
+        if ($p.PartitionNumber -eq $keepNumber) {
+            $action = '*** KEEP - setup files live here ***'
+        } elseif ("$($p.Type)" -eq 'Basic' -and $p.DriveLetter -and
+                  "$($p.DriveLetter):" -ne $env:SystemDrive) {
+            $action = 'your call - data partition'
+        } else {
+            $action = 'delete (Setup recreates it)'
+        }
+
+        [void]$lines.Add(('  {0,-4}  {1,-12}  {2,-20}  {3}' -f $p.PartitionNumber, $sizeTxt, $kind, $action))
+    }
+
+    $keep = Get-Partition -DiskNumber $diskNumber -PartitionNumber $keepNumber
+    $keepSize = if ($keep.Size -ge 1GB) { '{0:N1} GB' -f ($keep.Size / 1GB) } else { '{0:N0} MB' -f ($keep.Size / 1MB) }
+
+    [void]$lines.Add('')
+    [void]$lines.Add(('THE ONE TO KEEP IS {0} - partition {1} on disk {2}, currently {3}.' -f
+                      $drive, $keepNumber, $diskNumber, $keepSize))
+    [void]$lines.Add('')
+    [void]$lines.Add('In Setup:')
+    [void]$lines.Add('  1. Choose "Custom: Install Windows only (advanced)".')
+    [void]$lines.Add('  2. Delete the old Windows partition and its System / MSR / Recovery')
+    [void]$lines.Add('     partitions. Setup builds fresh ones for you.')
+    [void]$lines.Add('  3. Leave the partition above alone.')
+    [void]$lines.Add('  4. Select the resulting "Unallocated Space" and press Next. Setup')
+    [void]$lines.Add('     partitions it and installs.')
+    [void]$lines.Add('')
+    [void]$lines.Add('Afterwards, the Reclaim space tab can fold the leftover free space back')
+    [void]$lines.Add('into the new C:, including moving the Recovery partition out of the way.')
+
+    foreach ($l in $lines) { Write-WdLog $l 'INFO' }
+
+    $file = Join-Path $drive 'WinDeploySetup-READ-ME-FIRST.txt'
+    try {
+        Set-Content -LiteralPath $file -Value $lines -Encoding UTF8
+        Write-WdLog "Saved a copy to $file" 'OK'
+    } catch {
+        Write-WdLog "Could not save the note to $file : $($_.Exception.Message)" 'WARN'
+    }
+    return ($lines -join "`r`n")
 }
 
 function Uninstall-WdSetupBootEntry {
@@ -238,4 +338,4 @@ function Install-WdSetupFromIso {
 
 Export-ModuleMember -Function Invoke-WdBcdEdit, Backup-WdBcd, Restore-WdBcd, Get-WdBcdBackups,
                               Get-WdSetupHostVolumes, Install-WdSetupBootEntry,
-                              Uninstall-WdSetupBootEntry, Install-WdSetupFromIso
+                              Uninstall-WdSetupBootEntry, Install-WdSetupFromIso, Write-WdSetupCheatSheet
