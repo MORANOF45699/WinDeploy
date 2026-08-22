@@ -84,10 +84,31 @@ function Set-WdBusy {
     $ui.Tabs.IsEnabled = $true
 }
 
+# log line colours, matched to the palette in MainWindow.xaml
+$script:LogColors = @{
+    INFO  = '#98A1B8'
+    CMD   = '#7BA5F7'
+    OK    = '#57D9A3'
+    WARN  = '#F5B942'
+    ERROR = '#F2646A'
+}
+$script:LogLines = New-Object System.Collections.ObjectModel.ObservableCollection[object]
+
 function Add-WdLogLine {
-    param([string]$Text)
-    $ui.TxtLog.AppendText($Text + "`r`n")
-    $ui.TxtLog.ScrollToEnd()
+    param(
+        [Parameter(Position = 0)][AllowEmptyString()][string]$Text,
+        [Parameter(Position = 1)][string]$Level = 'INFO'
+    )
+
+    $colour = $script:LogColors[$Level]
+    if (-not $colour) { $colour = $script:LogColors['INFO'] }
+
+    $script:LogLines.Add([pscustomobject]@{ Text = $Text; Color = $colour })
+
+    # keep the pane light; the full history is on disk anyway
+    while ($script:LogLines.Count -gt 800) { $script:LogLines.RemoveAt(0) }
+
+    $ui.LstLog.ScrollIntoView($script:LogLines[$script:LogLines.Count - 1])
 }
 
 function Show-WdError {
@@ -200,7 +221,7 @@ $timer.Interval = [TimeSpan]::FromMilliseconds(180)
 $timer.Add_Tick({
     foreach ($msg in (Get-WdMessages)) {
         switch ($msg.Type) {
-            'log' { Add-WdLogLine $msg.Text }
+            'log' { Add-WdLogLine $msg.Text $msg.Level }
             'progress' {
                 if ($msg.Percent -ge 0) { $ui.Progress.Value = [math]::Min(100, [math]::Max(0, $msg.Percent)) }
                 if ($msg.Status) { $ui.TxtStatus.Text = $msg.Status }
@@ -756,7 +777,8 @@ $window.Add_Closing({
 })
 
 $window.Add_ContentRendered({
-    Add-WdLogLine "Log file: $script:LogFile"
+    $ui.LstLog.ItemsSource = $script:LogLines
+    Add-WdLogLine "Log file: $script:LogFile" 'CMD'
     try {
         $ui.GridDisks.ItemsSource = Get-WdDisks
         Update-WdBootGrid
