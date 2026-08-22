@@ -295,6 +295,7 @@ function Uninstall-WdSetupBootEntry {
     param(
         [Parameter(Mandatory)][string]$Id,
         [string]$Folder = '',
+        [switch]$DeletePartition,
         [switch]$DeleteFiles
     )
 
@@ -310,27 +311,134 @@ function Uninstall-WdSetupBootEntry {
         Remove-Item -LiteralPath $Folder -Recurse -Force
         Write-WdLog 'Setup files deleted.' 'OK'
     }
+
+    if ($DeletePartition -and $Folder) {
+        $letter = ($Folder -split ':')[0].TrimStart('\')
+        Remove-WdSetupPartition -DriveLetter $letter
+    }
+}
+
+function Remove-WdSetupPartition {
+    <#
+        Deletes a temporary setup partition, but only after checking the label
+        this tool put on it. A volume somebody else made is never touched.
+    #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$DriveLetter)
+
+    $letter = $DriveLetter.TrimEnd(':', '\')
+    $vol = Get-Volume -DriveLetter $letter -ErrorAction SilentlyContinue
+    if (-not $vol) {
+        Write-WdLog "${letter}: is gone already - nothing to delete." 'INFO'
+        return
+    }
+    if ($vol.FileSystemLabel -ne $script:TempLabel) {
+        throw ("${letter}: is labelled '$($vol.FileSystemLabel)', not '$($script:TempLabel)' - " +
+               'refusing to delete a partition WinDeploy did not create.')
+    }
+
+    $part = Get-Partition -DriveLetter $letter -ErrorAction Stop
+    Write-WdLog ('Deleting the temporary partition {0}: ({1:N1} GB) on disk {2}...' -f
+                 $letter, ($part.Size / 1GB), $part.DiskNumber) 'WARN'
+    Remove-Partition -DiskNumber $part.DiskNumber -PartitionNumber $part.PartitionNumber -Confirm:$false -ErrorAction Stop
+    Write-WdLog ("Temporary partition removed. Use the Reclaim space tab to fold the free space " +
+                 "back into the partition before it.") 'OK'
+}
+
+$script:TempLabel = 'WINSETUP-TEMP'
+
+function New-WdSetupPartition {
+    <#
+        For a machine with a single partition: shrink it, carve out a small
+        NTFS volume for the installation files, and hand back its drive letter.
+
+        This is the one case where a partition really is the answer. Setup has
+        to be able to delete the Windows partition, and it cannot do that while
+        reading install.wim off it - so the files need somewhere else to live,
+        and on a one-partition machine there is nowhere else. The partition is
+        labelled so the cleanup step can recognise it later, and the Reclaim
+        space tab folds the room back into C: when the install is done.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][int]$DiskNumber,
+        [Parameter(Mandatory)][int]$ShrinkFromPartition,
+        [Parameter(Mandatory)][double]$SizeGB
+    )
+
+    Write-WdLog ('Carving out a {0:N1} GB temporary partition for the setup files...' -f $SizeGB) 'INFO'
+    $letter = New-WdTargetPartition -DiskNumber $DiskNumber -SizeGB $SizeGB `
+                                    -ShrinkFromPartition $ShrinkFromPartition `
+                                    -Label $script:TempLabel -MinimumGB 8
+    Write-WdLog "Temporary setup partition is ${letter}:" 'OK'
+    return "$letter"
+}
+
+function Get-WdSetupSizeGB {
+    <# How much room the copied tree needs, with slack for the split .swm files. #>
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$IsoPath)
+
+    if (-not (Test-Path -LiteralPath $IsoPath)) { return 16 }
+    $item = Get-Item -LiteralPath $IsoPath
+    if ($item.PSIsContainer) {
+        $bytes = (Get-ChildItem -LiteralPath $IsoPath -Recurse -File -ErrorAction SilentlyContinue |
+                  Measure-Object -Property Length -Sum).Sum
+    } else {
+        $bytes = $item.Length
+    }
+    $gb = [math]::Ceiling(($bytes / 1GB) * 1.25) + 1
+    if ($gb -lt 10) { $gb = 10 }
+    return [double]$gb
 }
 
 function Install-WdSetupFromIso {
-    <# One background task: mount, validate, copy, register. #>
+    <#
+        One background task: mount, validate, optionally carve out a temporary
+        partition, copy, register the boot entry.
+    #>
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$SourcePath,
-        [Parameter(Mandatory)][string]$HostDrive,
+        [string]$HostDrive = '',
         [string]$EntryName = 'Windows Setup (WinDeploy)',
-        [switch]$OneShot
+        [switch]$OneShot,
+        [switch]$CreateTempPartition,
+        [int]$TempDiskNumber = -1,
+        [int]$TempShrinkPartition = 0,
+        [double]$TempSizeGB = 0
     )
 
     $src = $null
+    $createdLetter = ''
     try {
         Write-WdProgress 1 'Mounting source'
         $src = Mount-WdSource -Path $SourcePath
         Test-WdWindowsSource -Root $src.Root | Out-Null
 
+        if ($CreateTempPartition) {
+            if ($TempDiskNumber -lt 0) { throw 'No disk was chosen for the temporary partition.' }
+            if ($TempSizeGB -le 0) { $TempSizeGB = Get-WdSetupSizeGB -IsoPath $SourcePath }
+
+            Write-WdProgress 3 'Creating the temporary partition'
+            $createdLetter = New-WdSetupPartition -DiskNumber $TempDiskNumber `
+                                                  -ShrinkFromPartition $TempShrinkPartition `
+                                                  -SizeGB $TempSizeGB
+            $HostDrive = "${createdLetter}:"
+        }
+
+        if (-not $HostDrive) { throw 'No volume was chosen for the setup files.' }
+
         $result = Install-WdSetupBootEntry -SourceRoot $src.Root -HostDrive $HostDrive `
                                            -EntryName $EntryName -OneShot:$OneShot
+        Add-Member -InputObject $result -NotePropertyName 'TempPartition' -NotePropertyValue ([bool]$createdLetter) -Force
         return $result
+    } catch {
+        if ($createdLetter) {
+            Write-WdLog ("The temporary partition ${createdLetter}: was created before this failed. " +
+                         'Remove it from Disk Management, or run the cleanup button.') 'WARN'
+        }
+        throw
     } finally {
         Dismount-WdSource -Source $src
     }
@@ -338,4 +446,5 @@ function Install-WdSetupFromIso {
 
 Export-ModuleMember -Function Invoke-WdBcdEdit, Backup-WdBcd, Restore-WdBcd, Get-WdBcdBackups,
                               Get-WdSetupHostVolumes, Install-WdSetupBootEntry,
-                              Uninstall-WdSetupBootEntry, Install-WdSetupFromIso, Write-WdSetupCheatSheet
+                              Uninstall-WdSetupBootEntry, Install-WdSetupFromIso, Write-WdSetupCheatSheet,
+                              New-WdSetupPartition, Remove-WdSetupPartition, Get-WdSetupSizeGB

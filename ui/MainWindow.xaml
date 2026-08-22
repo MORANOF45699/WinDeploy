@@ -842,11 +842,33 @@
                 </Grid>
 
                 <TextBlock Style="{StaticResource Header}" Text="2  เก็บไฟล์ติดตั้งไว้ที่ไหน"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                  <RadioButton x:Name="RadSetupExisting" Content="ใช้ไดรฟ์ที่มีอยู่" IsChecked="True"
+                               GroupName="SetupHost" Margin="0,0,26,0"/>
+                  <RadioButton x:Name="RadSetupTemp" Content="แบ่งพาร์ทิชันชั่วคราวให้ (สำหรับเครื่องที่มีไดรฟ์เดียว)"
+                               GroupName="SetupHost"/>
+                </StackPanel>
+
                 <ComboBox x:Name="CmbSetupHost" ItemTemplate="{StaticResource DisplayItem}"/>
                 <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
                   <Button x:Name="BtnRefreshSetupHost" Content="อ่านไดรฟ์ใหม่" Width="140"/>
                   <TextBlock x:Name="TxtSetupNeed" Foreground="{StaticResource Accent}" Margin="6,0,0,0" FontSize="12"/>
                 </StackPanel>
+
+                <Grid x:Name="PanelSetupTemp" Margin="0,12,0,0" IsEnabled="False">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="90"/>
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Text="ย่อพาร์ทิชัน" Foreground="{StaticResource TextDim}" Margin="0,0,10,0"/>
+                  <ComboBox  Grid.Column="1" x:Name="CmbSetupShrink" ItemTemplate="{StaticResource DisplayItem}"/>
+                  <TextBlock Grid.Column="2" Text="ขนาด (GB)" Foreground="{StaticResource TextDim}" Margin="18,0,10,0"/>
+                  <TextBox   Grid.Column="3" x:Name="TxtSetupTempGB" Text="16"/>
+                </Grid>
+                <TextBlock Style="{StaticResource Hint}"
+                           Text="ย่อ C: เอาที่มาทำพาร์ทิชันเล็กๆ ชื่อ WINSETUP-TEMP เก็บไฟล์ติดตั้ง ใน Setup ให้ลบเฉพาะ C: แล้วเก็บพาร์ทิชันนี้ไว้ ลงเสร็จค่อยกดลบทิ้งแล้วใช้แท็บทวงที่คืนรวมกลับเข้า C: ตัวใหม่"/>
               </StackPanel>
             </Border>
 

@@ -148,11 +148,14 @@ function New-WdTargetPartition {
         [Parameter(Mandatory)][int]$DiskNumber,
         [Parameter(Mandatory)][double]$SizeGB,
         [int]$ShrinkFromPartition = 0,
-        [string]$Label = 'Windows-New'
+        [string]$Label = 'Windows-New',
+        [double]$MinimumGB = 25
     )
 
     $needed = [long]($SizeGB * 1GB)
-    if ($needed -lt 25GB) { throw 'Give the new Windows at least 25 GB.' }
+    if ($needed -lt ($MinimumGB * 1GB)) {
+        throw ('The partition has to be at least {0:N0} GB.' -f $MinimumGB)
+    }
 
     $free = Get-WdLargestFreeSpace -DiskNumber $DiskNumber
     Write-WdLog ("Disk {0}: {1:N1} GB unallocated, need {2:N1} GB." -f $DiskNumber, ($free / 1GB), $SizeGB) 'INFO'

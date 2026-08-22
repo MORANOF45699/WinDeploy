@@ -421,7 +421,8 @@ function Update-WdSetupHosts {
         # the copied tree is roughly the size of the ISO
         $needGB = [math]::Round((Get-Item -LiteralPath $iso).Length / 1GB, 1)
     }
-    $ui.TxtSetupNeed.Text = if ($needGB) { "Needs about $needGB GB free." } else { '' }
+    $ui.TxtSetupNeed.Text = if ($needGB) { "ต้องการที่ว่างประมาณ $needGB GB" } else { '' }
+    if ($needGB) { $ui.TxtSetupTempGB.Text = "$([math]::Ceiling($needGB * 1.25) + 1)" }
     try {
         $ui.CmbSetupHost.ItemsSource = Get-WdSetupHostVolumes -NeededGB $needGB
         $firstOk = @($ui.CmbSetupHost.ItemsSource | Where-Object { $_.Fits -and -not $_.IsSystem }) | Select-Object -First 1
@@ -432,6 +433,42 @@ function Update-WdSetupHosts {
     }
 }
 
+function Update-WdSetupShrinkList {
+    <# Partitions big enough to give up room for the temporary setup partition. #>
+    try {
+        $items = New-Object System.Collections.ObjectModel.ObservableCollection[object]
+        foreach ($d in (Get-WdDisks)) {
+            foreach ($p in (Get-WdPartitions -DiskNumber $d.DiskNumber)) {
+                if ($p.SizeBytes -lt 40GB -or -not $p.DriveLetter) { continue }
+                $items.Add([pscustomobject]@{
+                    Disk    = $d.DiskNumber
+                    Number  = $p.PartitionNumber
+                    Display = "ดิสก์ $($d.DiskNumber) พาร์ท $($p.PartitionNumber)  $($p.DriveLetter) $($p.Label)  -  $($p.SizeGB), ว่าง $($p.FreeGB)"
+                })
+            }
+        }
+        $ui.CmbSetupShrink.ItemsSource = $items
+
+        # default to the volume Windows is on - the usual single-disk case
+        $sys = $env:SystemDrive.TrimEnd('\')
+        $pick = @($items | Where-Object { $_.Display -like "*$sys *" }) | Select-Object -First 1
+        if ($pick) { $ui.CmbSetupShrink.SelectedItem = $pick }
+        elseif ($items.Count) { $ui.CmbSetupShrink.SelectedIndex = 0 }
+    } catch {
+        Write-WdLog "อ่านรายการพาร์ทิชันไม่สำเร็จ: $($_.Exception.Message)" 'WARN'
+    }
+}
+
+$updateSetupMode = {
+    $temp = [bool]$ui.RadSetupTemp.IsChecked
+    $ui.PanelSetupTemp.IsEnabled = $temp
+    $ui.CmbSetupHost.IsEnabled = -not $temp
+    $ui.BtnRefreshSetupHost.IsEnabled = -not $temp
+    if ($temp -and -not $ui.CmbSetupShrink.Items.Count) { Update-WdSetupShrinkList }
+}
+$ui.RadSetupExisting.Add_Checked($updateSetupMode)
+$ui.RadSetupTemp.Add_Checked($updateSetupMode)
+
 $ui.BtnBrowseSetupIso.Add_Click({
     $f = Select-WdFile
     if ($f) { $ui.TxtSetupIso.Text = $f; Update-WdSetupHosts }
@@ -441,43 +478,76 @@ $ui.BtnRefreshSetupHost.Add_Click({ Update-WdSetupHosts })
 
 $ui.BtnMakeSetupEntry.Add_Click({
     $iso = "$($ui.TxtSetupIso.Text)".Trim()
-    $host_ = $ui.CmbSetupHost.SelectedItem
-    if (-not $iso)   { Show-WdError 'เลือกไฟล์ต้นทาง Windows ก่อน'; return }
-    if (-not $host_) { Show-WdError 'เลือกไดรฟ์ที่จะเก็บไฟล์ติดตั้ง'; return }
+    if (-not $iso) { Show-WdError 'เลือกไฟล์ต้นทาง Windows ก่อน'; return }
 
-    if (-not $host_.Fits) {
-        Show-WdError "$($host_.Drive) does not have enough free space for the setup files."
-        return
+    $useTemp = [bool]$ui.RadSetupTemp.IsChecked
+    $jobArgs = @{
+        SourcePath = $iso
+        EntryName  = "$($ui.TxtSetupEntryName.Text)".Trim()
+        OneShot    = [bool]$ui.ChkOneShot.IsChecked
+        HostDrive  = ''
+        CreateTemp = $useTemp
+        TempDisk   = -1
+        TempShrink = 0
+        TempSizeGB = 0.0
     }
-    if ($host_.IsSystem) {
+    $confirmDisk = -1
+
+    if ($useTemp) {
+        $shrink = $ui.CmbSetupShrink.SelectedItem
+        if (-not $shrink) { Show-WdError 'เลือกพาร์ทิชันที่จะย่อก่อน'; return }
+
+        $sizeGB = 0.0
+        if (-not [double]::TryParse("$($ui.TxtSetupTempGB.Text)".Trim(), [ref]$sizeGB) -or $sizeGB -lt 10) {
+            Show-WdError 'ใส่ขนาดพาร์ทิชันชั่วคราวอย่างน้อย 10 GB'; return
+        }
+
+        $jobArgs.TempDisk = [int]$shrink.Disk
+        $jobArgs.TempShrink = [int]$shrink.Number
+        $jobArgs.TempSizeGB = $sizeGB
+        $confirmDisk = [int]$shrink.Disk
+
+        $summary = "ดิสก์ $($shrink.Disk):`r`n" +
+                   " - ย่อพาร์ทิชัน $($shrink.Number) ลง $sizeGB GB`r`n" +
+                   " - สร้างพาร์ทิชันชั่วคราว WINSETUP-TEMP ขนาด $sizeGB GB`r`n" +
+                   " - ก๊อปไฟล์ติดตั้งลงไป แล้วเพิ่มรายการบูตเข้า Setup`r`n`r`n" +
+                   'ข้อมูลเดิมไม่ถูกลบ แค่ย่อพาร์ทิชัน และสำรอง BCD ให้ก่อนแก้'
+        if (-not (Confirm-WdDestructive $summary $confirmDisk)) { return }
+    } else {
+        $host_ = $ui.CmbSetupHost.SelectedItem
+        if (-not $host_) { Show-WdError 'เลือกไดรฟ์ที่จะเก็บไฟล์ติดตั้ง'; return }
+        if (-not $host_.Fits) { Show-WdError "$($host_.Drive) มีที่ว่างไม่พอสำหรับไฟล์ติดตั้ง"; return }
+
+        if ($host_.IsSystem) {
+            $answer = [Windows.MessageBox]::Show(
+                "ไฟล์จะถูกเก็บไว้ที่ $($host_.Drive) ซึ่งเป็นไดรฟ์ระบบ`r`n`r`n" +
+                "Setup จะล้าง $($host_.Drive) ไม่ได้เลย เพราะไฟล์ติดตั้งอยู่ในนั้นเอง " +
+                "ถ้าอยากล้างให้สะอาด ให้เลือกไดรฟ์ข้อมูลอื่น หรือใช้ตัวเลือกแบ่งพาร์ทิชันชั่วคราว`r`n`r`n" +
+                'จะทำต่อไหม',
+                'ไดรฟ์ระบบ', 'YesNo', 'Warning')
+            if ($answer -ne 'Yes') { return }
+        }
+
+        $jobArgs.HostDrive = "$($host_.Drive)"
         $answer = [Windows.MessageBox]::Show(
-            "The files would go on $($host_.Drive), which is the system volume.`r`n`r`n" +
-            "Setup will not be able to wipe $($host_.Drive) with its own source files on it. " +
-            "Use a data partition instead if you want a clean wipe.`r`n`r`nCarry on anyway?",
-            'ไดรฟ์ระบบ', 'YesNo', 'Warning')
+            "ก๊อปไฟล์ติดตั้งไปที่ $($host_.Drive)\WinDeploySetup แล้วเพิ่มรายการบูตเข้า Setup ไหม" +
+            "`r`n`r`nสำรอง BCD ให้ก่อน ขั้นตอนนี้ไม่ลบอะไรทั้งนั้น",
+            'ยืนยัน', 'YesNo', 'Question')
         if ($answer -ne 'Yes') { return }
     }
 
-    $answer = [Windows.MessageBox]::Show(
-        "ก๊อปไฟล์ติดตั้งไปที่ $($host_.Drive)\WinDeploySetup แล้วเพิ่มรายการบูตเข้า Setup ไหม" +
-        "`r`n`r`nThe boot store is backed up first. Nothing is erased by this step.",
-        'ยืนยัน', 'YesNo', 'Question')
-    if ($answer -ne 'Yes') { return }
-
-    Invoke-WdJob -Name 'กำลังเตรียมรายการบูตเข้า Setup' -Arguments @{
-        SourcePath = $iso
-        HostDrive  = "$($host_.Drive)"
-        EntryName  = "$($ui.TxtSetupEntryName.Text)".Trim()
-        OneShot    = [bool]$ui.ChkOneShot.IsChecked
-    } -OnDone {
-        $extra = if ($ui.ChkOneShot.IsChecked) { 'The next restart goes straight to Setup.' }
-                 else { 'Pick it from the boot menu on the next restart.' }
-        Show-WdInfo ("Setup boot entry is ready. $extra`r`n`r`n" +
-                     "In Setup, do NOT delete the partition holding the WinDeploySetup folder.")
+    Invoke-WdJob -Name 'กำลังเตรียมรายการบูตเข้า Setup' -Arguments $jobArgs -OnDone {
+        $extra = if ($ui.ChkOneShot.IsChecked) { 'รีบูตรอบหน้าจะเข้า Setup ทันที' }
+                 else { 'รีบูตแล้วเลือกรายการนี้จากเมนูบูต' }
+        Show-WdInfo ("รายการบูตเข้า Setup พร้อมแล้ว $extra`r`n`r`n" +
+                     "ตอนอยู่ใน Setup ห้ามลบพาร์ทิชันที่มีโฟลเดอร์ WinDeploySetup เด็ดขาด`r`n" +
+                     'รายละเอียดพาร์ทิชันอยู่ใน log และในไฟล์ WinDeploySetup-READ-ME-FIRST.txt')
     } -Script {
-        param($SourcePath, $HostDrive, $EntryName, $OneShot)
+        param($SourcePath, $HostDrive, $EntryName, $OneShot, $CreateTemp, $TempDisk, $TempShrink, $TempSizeGB)
         $r = Install-WdSetupFromIso -SourcePath $SourcePath -HostDrive $HostDrive `
-                                    -EntryName $EntryName -OneShot:$OneShot
+                                    -EntryName $EntryName -OneShot:$OneShot `
+                                    -CreateTempPartition:$CreateTemp -TempDiskNumber $TempDisk `
+                                    -TempShrinkPartition $TempShrink -TempSizeGB $TempSizeGB
         Publish-WdResult 'setupentry' $r
     }
 })
@@ -499,14 +569,30 @@ $ui.BtnRemoveSetupEntry.Add_Click({
         return
     }
 
+    # a temporary partition WinDeploy made goes away with the files
+    $wasTemp = $false
+    try {
+        $letter = ($folder -split ':')[0].TrimStart('\')
+        if ($letter) {
+            $vol = Get-Volume -DriveLetter $letter -ErrorAction SilentlyContinue
+            $wasTemp = ($vol -and $vol.FileSystemLabel -eq 'WINSETUP-TEMP')
+        }
+    } catch { }
+
+    $extra = if ($wasTemp) { "`r`n`r`nพาร์ทิชันชั่วคราว WINSETUP-TEMP จะถูกลบทิ้งด้วย" } else { '' }
     $answer = [Windows.MessageBox]::Show(
-        "ลบรายการบูต $id และลบโฟลเดอร์`r`n$folder ไหม", 'ยืนยัน', 'YesNo', 'Warning')
+        "ลบรายการบูต $id และลบโฟลเดอร์`r`n$folder ไหม$extra", 'ยืนยัน', 'YesNo', 'Warning')
     if ($answer -ne 'Yes') { return }
 
-    Invoke-WdJob -Name 'กำลังลบรายการบูตเข้า Setup' -Arguments @{ Id = $id; Folder = $folder } `
-        -OnDone { $script:LastSetupEntry = $null; Update-WdBootGrid; Show-WdInfo 'ลบรายการบูตกับไฟล์เรียบร้อย' } -Script {
-        param($Id, $Folder)
-        Uninstall-WdSetupBootEntry -Id $Id -Folder $Folder -DeleteFiles
+    Invoke-WdJob -Name 'กำลังลบรายการบูตเข้า Setup' -Arguments @{ Id = $id; Folder = $folder; DropPartition = $wasTemp } `
+        -OnDone {
+            $script:LastSetupEntry = $null
+            Update-WdBootGrid
+            Update-WdReclaimLayout
+            Show-WdInfo 'ลบรายการบูตกับไฟล์เรียบร้อย'
+        } -Script {
+        param($Id, $Folder, $DropPartition)
+        Uninstall-WdSetupBootEntry -Id $Id -Folder $Folder -DeleteFiles -DeletePartition:$DropPartition
     }
 })
 
